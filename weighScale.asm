@@ -61,6 +61,10 @@ ERROR_MENU:
 ; ====================
 ; === Main Program ===
 ; ====================
+Place 0000H
+START:	
+		MOV R0, BEGINNING
+		JMP R0
 Place 3000H				
 BEGINNING:				
 		MOV SP, STACK_POINTER		; Initialize stack
@@ -83,9 +87,9 @@ READ_INPUT:
 		CMP R1, MENU_WEIGHT_SCALE	; Check if input is option 1
 		JEQ OPTION_WEIGHT_SCALE		; Jump to option 1
 		CMP R1, MENU_HISTORY		; Check if input is option 2
-		JEQ OPTION_MENU_HISTORY		; Jump to option 2
+	;	JEQ OPTION_MENU_HISTORY		; Jump to option 2
 		CMP R1, HISTORY_RESET		; Check if input is option 3
-		JEQ OPTION_MENU_HISTORY		; Jump to option 3
+	;	JEQ OPTION_RESET		; Jump to option 3
 		CALL SHOW_ERROR			; If no valid option was chosen, show error
 		JMP ON				; Loop back to the starting menu
 
@@ -143,7 +147,7 @@ SHOW_DISPLAY_CYCLE:
 		ADD R2, 2			;
 		ADD R0, 2			;
 		CMP R0, R1			;
-		JLE CICLO			;
+		JLE SHOW_DISPLAY_CYCLE		;
 		POP R3				;
 		POP R2				;
 		POP R1				;
