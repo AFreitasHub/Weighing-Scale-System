@@ -15,7 +15,7 @@ MENU_WEIGHT_SCALE	EQU	01H	; Option to weight a product
 MENU_HISTORY		EQU	02H	; Option to view weighting history
 HISTORY_RESET		EQU	03H	; Option to reset weighting history
 
-STACK_POINTER 		EQU 	6000H	; Top of the stack address
+STACK_POINTER 		EQU 	3000H	; Top of the stack address
 
 ; =============
 ; === Menus ===
