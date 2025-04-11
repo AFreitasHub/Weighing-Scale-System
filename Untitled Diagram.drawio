@@ -1,9 +1,52 @@
 <mxfile host="app.diagrams.net" agent="Mozilla/5.0 (X11; Linux x86_64; rv:137.0) Gecko/20100101 Firefox/137.0" version="26.2.10">
   <diagram name="Page-1" id="Wz7lf-9QpKGxH8kcqoVr">
-    <mxGraphModel>
+    <mxGraphModel dx="597" dy="334" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
+        <mxCell id="KrtiOsnqrLNsgrwErKld-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0.5;exitDx=0;exitDy=15;exitPerimeter=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="KrtiOsnqrLNsgrwErKld-1" target="KrtiOsnqrLNsgrwErKld-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="KrtiOsnqrLNsgrwErKld-1" value="Início" style="html=1;dashed=0;whiteSpace=wrap;shape=mxgraph.dfd.start" vertex="1" parent="1">
+          <mxGeometry x="385" y="30" width="80" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="KrtiOsnqrLNsgrwErKld-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="KrtiOsnqrLNsgrwErKld-2" target="KrtiOsnqrLNsgrwErKld-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="KrtiOsnqrLNsgrwErKld-2" value="Mostrar menu de pesagem vazio" style="html=1;dashed=0;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="375" y="100" width="100" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="KrtiOsnqrLNsgrwErKld-11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="KrtiOsnqrLNsgrwErKld-4" target="KrtiOsnqrLNsgrwErKld-10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="KrtiOsnqrLNsgrwErKld-13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="KrtiOsnqrLNsgrwErKld-4" target="KrtiOsnqrLNsgrwErKld-14">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="560" y="224.8571428571429" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="KrtiOsnqrLNsgrwErKld-4" value="&lt;div align=&quot;center&quot;&gt;&lt;font&gt;Código de produto na RAM&lt;/font&gt;&lt;/div&gt;" style="shape=rhombus;html=1;dashed=0;whiteSpace=wrap;perimeter=rhombusPerimeter;align=center;" vertex="1" parent="1">
+          <mxGeometry x="370" y="190" width="111" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="KrtiOsnqrLNsgrwErKld-12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="KrtiOsnqrLNsgrwErKld-10" target="KrtiOsnqrLNsgrwErKld-2">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="320" y="335" />
+              <mxPoint x="320" y="125" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="KrtiOsnqrLNsgrwErKld-10" value="Change=1" style="shape=rhombus;html=1;dashed=0;whiteSpace=wrap;perimeter=rhombusPerimeter;align=center;" vertex="1" parent="1">
+          <mxGeometry x="370" y="300" width="111" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="KrtiOsnqrLNsgrwErKld-16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="KrtiOsnqrLNsgrwErKld-14" target="KrtiOsnqrLNsgrwErKld-15">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="KrtiOsnqrLNsgrwErKld-14" value="Código presente na tabela" style="shape=rhombus;html=1;dashed=0;whiteSpace=wrap;perimeter=rhombusPerimeter;align=center;" vertex="1" parent="1">
+          <mxGeometry x="540" y="190" width="111" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="KrtiOsnqrLNsgrwErKld-15" value="Mostrar menu de pesagem" style="html=1;dashed=0;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="710" y="200" width="100" height="50" as="geometry" />
+        </mxCell>
       </root>
     </mxGraphModel>
   </diagram>
