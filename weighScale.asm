@@ -118,19 +118,24 @@ ERROR:
 ; ===============================
 OPTION_WEIGHT_SCALE:
 		; *** TO BE FINISHED ***
-
+		MOV R2, WEIGHT_SCALE_MENU	; Load the weight scale menu into R2
+		CALL SHOW_DISPLAY		; Display the weight scale menu
+		CALL CLEAR_PERIPHERICS		; Clear all the peripherics
+		MOV R0, SEL_NR_MENU		; 
 OPTION_WEIGHT_SCALE_CYCLE:
-		; *** TO BE FINISHED ***	
+		JMP OPTION_WEIGHT_SCALE_CYCLE	
 				
 ; =================================
 ; === Weight History (Option 2) ===
 ; =================================
 OPTION_MENU_HISTORY:
+		JMP OPTION_MENU_HISTORY
 
 ; ========================
 ; === Reset (Option 3) ===
 ; ========================
 OPTION_RESET:
+		JMP OPTION_RESET
 
 ; ====================
 ; === Show Display ===
