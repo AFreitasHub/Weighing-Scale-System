@@ -14,8 +14,7 @@ EMPTY_CHAR		EQU 	20H	; Blank ASCII character
 MENU_WEIGHT_SCALE	EQU	01H	; Option to weight a product
 MENU_HISTORY		EQU	02H	; Option to view weighting history
 HISTORY_RESET		EQU	03H	; Option to reset weighting history
-
-STACK_POINTER 		EQU 	6000H	; Top of the stack address
+STACK_POINTER 		EQU 	1000H	; Top of the stack address
 
 ; =============
 ; === Menus ===
@@ -87,9 +86,9 @@ READ_INPUT:
 		CMP R1, MENU_WEIGHT_SCALE	; Check if input is option 1
 		JEQ OPTION_WEIGHT_SCALE		; Jump to option 1
 		CMP R1, MENU_HISTORY		; Check if input is option 2
-	;	JEQ OPTION_MENU_HISTORY		; Jump to option 2
+		JEQ OPTION_MENU_HISTORY		; Jump to option 2
 		CMP R1, HISTORY_RESET		; Check if input is option 3
-	;	JEQ OPTION_RESET		; Jump to option 3
+		JEQ OPTION_RESET		; Jump to option 3
 		CALL SHOW_ERROR			; If no valid option was chosen, show error
 		JMP ON				; Loop back to the starting menu
 
@@ -126,11 +125,12 @@ OPTION_WEIGHT_SCALE_CYCLE:
 ; =================================
 ; === Weight History (Option 2) ===
 ; =================================
+OPTION_MENU_HISTORY:
 
 ; ========================
 ; === Reset (Option 3) ===
 ; ========================
-
+OPTION_RESET:
 
 ; ====================
 ; === Show Display ===
