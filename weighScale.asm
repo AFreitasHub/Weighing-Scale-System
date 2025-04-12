@@ -1,10 +1,11 @@
 ; Perifericos
-ON_OFF			EQU	1A0H	; On/Off button's address
-SEL_NR_MENU		EQU	1B0H	; Option selected input address
-OK			EQU	1C0H	; Confirmation input address
-CHANGE			EQU	1D0H	; Change/Edit input address
-CANCEL			EQU	1E0H	; Cancel/Go back input address
-PESO			EQU	1F0H	;
+ON_OFF			EQU	190H	; On/Off button's address
+SEL_NR_MENU		EQU	1A0H	; Option selected input address
+OK			EQU	1B0H	; Confirmation input address
+CHANGE			EQU	1C0H	; Change/Edit input address
+CANCEL			EQU	1D0H	; Cancel/Go back input address
+PESO			EQU	1E0H	; Weight of the product input address
+PRODUCT_CODE		EQU	1F0H	; Product code input address	
 					
 ; Display 7x16				
 DISPLAY_START		EQU	200H	; Start of the 7x16 display
@@ -14,7 +15,91 @@ EMPTY_CHAR		EQU 	20H	; Blank ASCII character
 MENU_WEIGHT_SCALE	EQU	01H	; Option to weight a product
 MENU_HISTORY		EQU	02H	; Option to view weighting history
 HISTORY_RESET		EQU	03H	; Option to reset weighting history
+
+MAX_WEIGHT		EQU	7530H	; Max weight (30kg) expressed in grams
+MIN_PRODUCT_CODE	EQU	64H	; 100
+MAX_PRODUCT_CODE	EQU	7CH	; 124
+
+; Constants
 STACK_POINTER 		EQU 	1000H	; Top of the stack address
+
+PLACE 4000H
+PRODUCTS:
+		Word    100
+		String "Uvas            "
+		Word    534
+		Word    101
+		String "Melancia        "
+		Word    187
+		Word    102
+		String "Ananás          "
+		Word    187
+		Word    103
+		String "Kiwi            "
+		Word    356
+		Word    104
+		String "Pêssego         "
+		Word    446
+		Word    105
+		String "Banana          "
+		Word    258
+		Word    106
+		String "Morango         "
+		Word    446
+		Word    107
+		String "Framboesa       "
+		Word    1781
+		Word    108
+		String "Laranja         "
+		Word    160
+		Word    109
+		String "Tangerina       "
+		Word    222
+		Word    110
+		String "Cenoura         "
+		Word    104
+		Word    111
+		String "Batata          "
+		Word    114
+		Word    112
+		String "Nabo            "
+		Word    228
+		Word    113
+		String "Beterraba       "
+		Word    523
+		Word    114
+		String "Alho            "
+		Word    619
+		Word    115
+		String "Cebola          "
+		Word    143
+		Word    116
+		String "Ervilha         "
+		Word    142
+		Word    117
+		String "Lentilhas       "
+		Word    219
+		Word    118
+		String "Trigo           "
+		Word    95
+		Word    119
+		String "Milho           "
+		Word    362
+		Word    120
+		String "Favas           "
+		Word    407
+		Word    121
+		String "Castanhas       "
+		Word    892
+		Word    122
+		String "Noz             "
+		Word    1839
+		Word    123
+		String "Amendoim        "
+		Word    803
+		Word    124
+		String "Café            "
+		Word    2025
 
 ; =============
 ; === Menus ===
@@ -66,6 +151,15 @@ WEIGHT_SCALE_MENU_EMPTY:
 		String "                "
 		String "  PRESSIONE OK  "
 		String " PARA CONTINUAR "
+Place 2280H
+SELECT_FRUIT_MENU: 
+		String "SELECT YOUR ITEM"
+		String "1-              "
+		String "2-              "
+		String "3-              " 
+		String "4-              " 
+		String "5-              "
+		String "CHANGE-SHOW MORE"
 
 ; ====================
 ; === Main Program ===
@@ -94,7 +188,7 @@ READ_INPUT:
 		CMP R1, 0			; Check if there's no user input
 		JEQ READ_INPUT			; Loop back if it's empty
 		CMP R1, MENU_WEIGHT_SCALE	; Check if input is option 1
-		JEQ OPTION_WEIGHT_SCALE		; Jump to option 1
+		JEQ OPTION_WEIGHT_SCALE	; Jump to option 1
 		CMP R1, MENU_HISTORY		; Check if input is option 2
 		JEQ OPTION_MENU_HISTORY		; Jump to option 2
 		CMP R1, HISTORY_RESET		; Check if input is option 3
@@ -123,18 +217,60 @@ ERROR:
 		POP R0				;
 		RET				;
 
+
 ; ===============================
 ; === Weight Scale (Option 1) ===
 ; ===============================
+
+; =============
+; === START ===
+; =============
 OPTION_WEIGHT_SCALE:
-		; *** TO BE FINISHED ***
+		PUSH R2	
 		MOV R2, WEIGHT_SCALE_MENU_EMPTY	; Load the weight scale menu into R2
 		CALL SHOW_DISPLAY		; Display the weight scale menu
 		CALL CLEAR_PERIPHERICS		; Clear all the peripherics
-		MOV R0, SEL_NR_MENU		; 
-OPTION_WEIGHT_SCALE_CYCLE:
-		JMP OPTION_WEIGHT_SCALE_CYCLE	
-				
+
+; ===================
+; === Read Inputs ===
+; ===================
+READ_PRODUCT_CODE:
+		MOV R0, PRODUCT_CODE		; Prepare to read PRODUCT_CODE
+		MOV R1, [R0]			; Read PRODUCT_CODE
+		MOV R6, 0064H			; Load the number 100 (minimum)
+		CMP R1, R6			; Compare the input and the minimum
+		JLT READ_PRODUCT_CODE		; If below the minimum, repeat
+		MOV R6, 007CH			; Load the number 124 (maximum)
+		CMP R1, R6			; Compare the input and the maximum
+		JGT READ_PRODUCT_CODE		; If above the maximum, repeat
+		JMP WEIGHT_SCALE		; If within the valid range, continue
+READ_INPUT_CHANGE:
+		MOV R0, CHANGE			; Prepare to read CHANGE button
+		MOVB R1, [R0]			; Read the CHANGE input
+		CMP R1, 1			; Check if CHANGE is on
+		JEQ SELECT_FRUIT_DISPLAY 	; 
+READ_INPUT_CANCEL:
+		MOV R0, CANCEL			; Prepare to read CANCEL button
+		MOVB R1, [R0]			; Read the CANCEL input
+		CMP R1, 1			; Check if CANCEL is on
+		JNE READ_PRODUCT_CODE		; If no button is pressed, repeat the cycle
+		POP R2
+		RET
+SELECT_FRUIT_DISPLAY:
+		MOV R2, SELECT_FRUIT_MENU	
+		CALL SHOW_DISPLAY
+		CALL CLEAR_PERIPHERICS
+		JMP SELECT_FRUIT_DISPLAY
+; ============
+; === MAIN ===
+; ============
+WEIGHT_SCALE:
+		MOV R2, WEIGHT_SCALE_MENU
+		CALL SHOW_DISPLAY
+		CALL CLEAR_PERIPHERICS
+		JMP WEIGHT_SCALE
+
+
 ; =================================
 ; === Weight History (Option 2) ===
 ; =================================
@@ -178,19 +314,23 @@ CLEAR_PERIPHERICS:
 		PUSH R3				;
 		PUSH R4				;
 		PUSH R5				;
+		PUSH R6				;
 		MOV R0, ON_OFF			;
 		MOV R1, SEL_NR_MENU		;
 		MOV R2, OK			;
 		MOV R3, CHANGE			;
 		MOV R4, CANCEL			;
 		MOV R5, PESO			;
-		MOV R6, 0			;
-		MOVB [R0], R6			;
-		MOVB [R1], R6			;
-		MOVB [R2], R6			;
-		MOVB [R3], R6			;
-		MOVB [R4], R6			;
-		MOVB [R5], R6			;
+		MOV R6, PRODUCT_CODE		;
+		MOV R7, 0			;
+		MOVB [R0], R7			;
+		MOVB [R1], R7			;
+		MOVB [R2], R7			;
+		MOVB [R3], R7			;
+		MOVB [R4], R7			;
+		MOV [R5], R7			;
+		MOV [R6], R7			;
+		POP R6				;
 		POP R5				;
 		POP R4				;
 		POP R3				;
