@@ -32,11 +32,11 @@ Place 2080H
 WEIGHT_SCALE_MENU:
 		String "                "
 		String "                "
+		String "Peso:           "
 		String "                "
+		String "Preço:          "
 		String "                "
-		String "                "
-		String "                "
-		String "                "
+		String "Total:          "
 Place 2100H
 HISTORY_MENU:
 		String "                "
@@ -49,13 +49,23 @@ HISTORY_MENU:
 					
 Place 2180H				
 ERROR_MENU:		
-		String "----------------"
 		String "     ERRO!      "
 		String "----------------"
-		String "  POR FAVOR,    "
 		String "  ESCOLHA UMA   "
 		String "  OPÇÃO VÁLIDA  "
+		String "                "
+		String "  PRESSIONE OK  "
+		String " PARA CONTINUAR "
+
+Place 2200H
+WEIGHT_SCALE_MENU_EMPTY:
+		String "    ATENÇÃO!    "
 		String "----------------"
+		String " NENHUM PRODUTO "
+		String "  SELECIONADO   "
+		String "                "
+		String "  PRESSIONE OK  "
+		String " PARA CONTINUAR "
 
 ; ====================
 ; === Main Program ===
@@ -118,7 +128,7 @@ ERROR:
 ; ===============================
 OPTION_WEIGHT_SCALE:
 		; *** TO BE FINISHED ***
-		MOV R2, WEIGHT_SCALE_MENU	; Load the weight scale menu into R2
+		MOV R2, WEIGHT_SCALE_MENU_EMPTY	; Load the weight scale menu into R2
 		CALL SHOW_DISPLAY		; Display the weight scale menu
 		CALL CLEAR_PERIPHERICS		; Clear all the peripherics
 		MOV R0, SEL_NR_MENU		; 
