@@ -9,13 +9,13 @@ FIND_PRICE:
         	MOV R10, 124             	; PRODUCT_CODE but for testes
         	MOV R9, 20            		;
         	MOV R8, 18            		;
-        	JMP FIND_ID_LOOP        	;
+        	JMP FIND_PRICE_LOOP        	;
 FIND_PRICE_LOOP:
         	MOV R7, [R11]            	;
         	CMP R7, R10            		;
         	JEQ FOUND_PRICE            	;
         	ADD R11, R9            		;
-        	JMP FIND_ID_LOOP        	;
+        	JMP FIND_PRICE_LOOP        	;
 
 FOUND_PRICE:
 		ADD R11, R8            		; Adds 18 so that now its the price of the product and not the ID
