@@ -1,5 +1,6 @@
-PESO            	EQU    280H    		; Acho que 280H fica bonitinho logo abaixo
-TOTAL_PURCHASE        	EQU    281H    		; O preco total logo abaixo
+PESO            	EQU    	280H    	; Acho que 280H fica bonitinho logo abaixo
+TOTAL_PURCHASE        	EQU    	290H    	; O preco total logo abaixo
+MAX_WEIGHT		EQU	7530H		; Max weight (30kg) expressed in grams
 
 ; ===================
 ; === Find Price  ===
@@ -24,6 +25,8 @@ FOUND_PRICE:
 CALCULATE_PRICE:
         	MOV R0, PESO            	; Lê o peso em gramas
         	MOV R1, [R0]            	; R1 = gramas
+		CMP R1, MAX_WEIGHT		; Garante que é menor que 30kg
+		JA TOO_HEAVY			;
         	MOV R2, [R11]            	; R2 = preco por kilograma
         	MOV R3, R1            		; R3 = gramas
         	MUL R3, R2            		; R3 = gramas * preco_por_kilograma
@@ -33,3 +36,6 @@ CALCULATE_PRICE:
         	MOV R5, [R0]            	; R5 = TOTAL
         	ADD R5, R3            		; R5 = TOTAL + preco calculado agora
         	MOV [R0], R5            	; Atualiza o preco total da compra
+
+TOO_HEAVY:
+		;não pode ser superior a 30Kg logo diz erro e pede para tentar novamente, levando ao menu principal possivelmente
