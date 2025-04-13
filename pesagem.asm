@@ -26,7 +26,7 @@ CALCULATE_PRICE:
         	MOV R0, PESO            	; Lê o peso em gramas
         	MOV R1, [R0]            	; R1 = gramas
 		CMP R1, MAX_WEIGHT		; Garante que é menor que 30kg
-		JA TOO_HEAVY			;
+		JGT TOO_HEAVY			;
         	MOV R2, [R11]            	; R2 = preco por kilograma
         	MOV R3, R1            		; R3 = gramas
         	MUL R3, R2            		; R3 = gramas * preco_por_kilograma
