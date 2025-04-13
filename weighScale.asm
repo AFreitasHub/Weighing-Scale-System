@@ -364,19 +364,19 @@ CLEAR_DISPLAY_CYCLE:
 ; === Find ID  ===
 ; ================
 FIND_ID:
-		MOV R11, 4000H 			; Tabel adress
-		MOV R10, 115     		; PRODUCT_CODE but for testes is 102
+		MOV R11, 4000H 			;
+		MOV R10, 124     		; PRODUCT_CODE but for testes
 		MOV R9, 20			;
 		MOV R8, 2			;
-		JMP LOOP			;
-LOOP:
-		MOV R9, [R11]			;
-		CMP R9, R10			;
+		JMP FIND_ID_LOOP		;
+FIND_ID_LOOP:
+		MOV R7, [R11]			;
+		CMP R7, R10			;
 		JEQ FOUND_ID			;
-		ADD R11, R8			;
-		JMP LOOP			;
+		ADD R11, R9			;
+		JMP FIND_ID_LOOP		;
 
 FOUND_ID:
-		ADD R11, R8			; Adds 2 so that now its the name of the adress and not the ID
+		ADD R11, R8			; Adds 2 so that now its the name of the product and not the ID
 		;R11 now has the adress of the name of the product
-		;Still needs to print
+		;Still needs to print		
