@@ -358,3 +358,25 @@ CLEAR_DISPLAY_CYCLE:
 		POP R1				; Restore the original value of R1 from the stack
 		POP R0				; Restore the original value of R0 from the stack
 		RET				; Returns from the function
+
+
+; ================
+; === Find ID  ===
+; ================
+FIND_ID:
+		MOV R11, 4000H 			; Tabel adress
+		MOV R10, 115     		; PRODUCT_CODE but for testes is 102
+		MOV R9, 20			;
+		MOV R8, 2			;
+		JMP LOOP			;
+LOOP:
+		MOV R9, [R11]			;
+		CMP R9, R10			;
+		JEQ FOUND_ID			;
+		ADD R11, R8			;
+		JMP LOOP			;
+
+FOUND_ID:
+		ADD R11, R8			; Adds 2 so that now its the name of the adress and not the ID
+		;R11 now has the adress of the name of the product
+		;Still needs to print
