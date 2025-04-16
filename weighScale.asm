@@ -305,7 +305,7 @@ CHANGE_ITEM:
 ; === Show and Choose the Products ===
 ; ====================================
 SHOW_PRODUCTS_START:
-		MOV R11, 4000H        ; R11: Pointer to current PRODUCT_CODE
+		MOV R11, 4000H; R11: Pointer to current PRODUCT_CODE
 		MOV R10, 4002H        ; R10: Pointer to current product NAME
 		MOV R8, 20            ; R8: Size of one product entry
 		MOV R7, 12            ; R7: Max characters in product name
@@ -324,6 +324,7 @@ FETCH_PRODUCTS:
 		POP R4
 		POP R3
 		POP R2
+		
 ; ===========================
 ; === Wait For User Input ===
 ; ===========================
@@ -336,6 +337,7 @@ CHECK_INPUT:
 		MOVB R1, [R0]
 		CMP R1, 0
 		JEQ CHECK_INPUT
+		CALL CONFIRM
 ; ========================
 ; === Handle Selection ===
 ; ========================
@@ -370,8 +372,13 @@ SELECT_5:
 CHANGE_PRODUCTS:
 		MOV R1, 0
 		MOV [R0], R1
-		MOV R0, 214H          
+		MOV R0, 214H     
+		MOV R2, 41E0H
+		CMP R11, R2
+		JGE WRAP_AROUND
 		JMP FETCH_PRODUCTS
+WRAP_AROUND:
+		JMP SHOW_PRODUCTS_START
 END:
 		MOV R0, PRODUCT_CODE
 		MOV R2, [R1]
