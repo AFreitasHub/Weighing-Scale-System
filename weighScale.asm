@@ -153,13 +153,13 @@ WEIGHT_SCALE_MENU_EMPTY:
 		String "PARA SELECIONAR!"
 Place 2280H
 SELECT_FRUIT_MENU: 
-		String "SELECT YOUR ITEM"
-		String "1-              "
-		String "2-              "
-		String "3-              " 
-		String "4-              " 
-		String "5-              "
-		String "CHANGE-SHOW MORE"
+		String "ESCOLHA UM ITEM:"
+		String "1 - A           "	; 0214H
+		String "2 - B           "	; 0224H
+		String "3 - C           " 	; 0234H
+		String "4 - D           " 	; 0244H	
+		String "5 - E           "	; 0254H
+		String "CHANGE = PRÓXIMO"
 
 ; ====================
 ; === Main Program ===
@@ -187,11 +187,7 @@ READ_INPUT:
 		MOVB R1, [R0]			; Read the user input
 		CMP R1, 0			; Check if there's no user input
 		JEQ READ_INPUT			; Loop back if it's empty
-CONFIRM:	
-		MOV R0, OK
-		MOVB R3, [R0]
-		CMP R3, 0
-		JEQ CONFIRM
+		CALL CONFIRM
 MODE_SELECTION:
 		CMP R1, MENU_WEIGHT_SCALE	; Check if input is option 1
 		JEQ OPTION_WEIGHT_SCALE		; Jump to option 1
@@ -253,6 +249,10 @@ WEIGHT_SCALE_CYCLE:
 		CMP R1, 1			; Check if it's on
 		JEQ RETURN			; If so, return to the previous menu
 		MOV R0, PESO			; If not, prepare to read the PESO on the peripheric
+		MOV R0, CHANGE			; Prepare to read CHANGE input
+		MOVB R1, [R0]			; Read CHANGE
+		CMP R1, 1			; Check if it's on
+		JEQ CHANGE_MENU			; If so, go to the corresponding sub-routine
 		MOV R1, [R0]			; Read PESO
 		CMP R1, R7			; Check if the PESO In the peripheric is the same as the last known PESO
 		JEQ SKIP_DISPLAY_UPDATE		; If it's the same, do nothing
@@ -274,7 +274,13 @@ SKIP_DISPLAY_UPDATE:
 		JMP WEIGHT_SCALE_CYCLE		; If not, do nothing until "OK" is pressed
 RETURN: 
 		RET				; Return
+CHANGE_MENU: 
+		CALL CHANGE_ITEM		; Sub-routine that allows the user to select one item from a list
+		JMP WEIGHT_SCALE		; Loop back once a product has been chosen
 
+; =========================================================
+; === Sub-routine to fill the display with dynamic data ===
+; =========================================================
 FILL_WEIGHT_SCALE:
 		CALL FIND_ID			; Look for the current PRODUCT_CODE within the memory
 		CALL DISPLAY_NAME		; Display the name of the corresponding item
@@ -286,6 +292,110 @@ FILL_WEIGHT_SCALE:
 		CALL DISPLAY_PRICE_START	; Display the price of the item
 		CALL CLEAR_PERIPHERICS		; Clear peripherics
 		RET				; Return
+
+; =====================================
+; === Sub-routine to change product ===
+; =====================================
+CHANGE_ITEM: 
+		MOV R2, SELECT_FRUIT_MENU
+		CALL SHOW_DISPLAY 
+		CALL CLEAR_PERIPHERICS
+
+; ====================================
+; === Show and Choose the Products ===
+; ====================================
+SHOW_PRODUCTS_START:
+		MOV R11, 4000H        ; R11: Pointer to current PRODUCT_CODE
+		MOV R10, 4002H        ; R10: Pointer to current product NAME
+		MOV R8, 20            ; R8: Size of one product entry
+		MOV R7, 12            ; R7: Max characters in product name
+		MOV R0, 214H          ; R0: Initial display address
+		MOV R1, 0             ; Index counter
+FETCH_PRODUCTS:
+		PUSH R11             ; Save product pointer (ID)
+		CALL DISPLAY_PRODUCTS
+		ADD R11, R8          ; Next product's code
+		ADD R10, R8          ; Next product's name
+		ADD R1, 1
+		CMP R1, 5
+		JLT FETCH_PRODUCTS
+		POP R6
+		POP R5
+		POP R4
+		POP R3
+		POP R2
+; ===========================
+; === Wait For User Input ===
+; ===========================
+CHECK_INPUT:
+		MOV R0, CHANGE
+		MOVB R1, [R0]
+		CMP R1, 0
+		JNE CHANGE_PRODUCTS
+		MOV R0, SEL_NR_MENU
+		MOVB R1, [R0]
+		CMP R1, 0
+		JEQ CHECK_INPUT
+; ========================
+; === Handle Selection ===
+; ========================
+ITEM_SELECTION:
+		CMP R1, 1
+		JEQ SELECT_1
+		CMP R1, 2
+		JEQ SELECT_2
+		CMP R1, 3
+		JEQ SELECT_3
+		CMP R1, 4
+		JEQ SELECT_4
+		CMP R1, 5
+		JEQ SELECT_5
+		CALL SHOW_ERROR
+		JMP CHANGE_ITEM
+SELECT_1: 
+		MOV R1, R2
+		JMP END
+SELECT_2: 	
+		MOV R1, R3
+		JMP END
+SELECT_3: 
+		MOV R1, R4
+		JMP END
+SELECT_4: 
+		MOV R1, R5
+		JMP END
+SELECT_5: 
+		MOV R1, R6
+		JMP END
+CHANGE_PRODUCTS:
+		MOV R1, 0
+		MOV [R0], R1
+		MOV R0, 214H          
+		JMP FETCH_PRODUCTS
+END:
+		MOV R0, PRODUCT_CODE
+		MOV R2, [R1]
+		MOV [R0], R2
+		RET
+
+; ======================
+; === Display Helper ===
+; ======================
+DISPLAY_PRODUCTS:
+		PUSH R10
+		MOV R9, 0             ; Character index
+DISP_LOOP:
+		MOVB R2, [R10]        ; Load character
+		MOVB [R0], R2         ; Write to display
+		ADD R10, 1
+		ADD R0, 1
+		ADD R9, 1
+		CMP R9, R7
+		JLT DISP_LOOP
+		ADD R0, 4             ; Next display position
+		POP R10
+		RET
+
 ; =========================
 ; === Find Product Code ===
 ; =========================
@@ -377,6 +487,15 @@ DISPLAY_PRICE:
 		CALL DISPLAY_NUMBER
         	RET		        	;
 
+; ======================================
+; === Sub-Routine To Read User Input === 
+; ======================================
+CONFIRM:	
+		MOV R0, OK
+		MOVB R7, [R0]
+		CMP R7, 0
+		JEQ CONFIRM
+		RET
 ; ====================================
 ; === Sub-Routine To Display Error ===
 ; ====================================
@@ -536,15 +655,15 @@ PROCESS_DIGITS:
 		JEQ PROCESS_END			; End if no more digits
 		CMP R3, R9			; Compare current number with 10
 		JLT WRITE_DIGIT			; If it's a single digit, write it
-		MOD R3, R9                      ; Divide number by 10 if not a single digit
+		MOD R3, R9                      ; Divide number by 10 if not a single digit and store the remainder (to get the least significant digit) 
 		JMP PROCESS_DIGITS		; Continue processing next digit
 WRITE_DIGIT:    
 		ADD R3, R8                      ; Convert the digit to ASCII
 		MOVB [R6], R3                   ; Write the digit on the display
 		SUB R6, 1			; Move to the next position on the display
-		MOV R3, R2			; !!! THIS PART NEEDS FIXING !!!
-		DIV R3, R9			; !!! THIS PART NEEDS FIXING !!!
-		MOV R2, R3
+		MOV R3, R2			; Load the original number
+		DIV R3, R9			; Divide by 10 and store the whole part to remove the digit already displayed
+		MOV R2, R3			; Update the number in R2
 		SUB R10, 1			; Decrement counter for next digit
 		JMP PROCESS_DIGITS		; Continue processing next digit
 PROCESS_END:
