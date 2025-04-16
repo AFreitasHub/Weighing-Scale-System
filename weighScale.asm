@@ -248,11 +248,11 @@ WEIGHT_SCALE_CYCLE:
 		MOVB R1, [R0]			; Read CANCEL
 		CMP R1, 1			; Check if it's on
 		JEQ RETURN			; If so, return to the previous menu
-		MOV R0, PESO			; If not, prepare to read the PESO on the peripheric
 		MOV R0, CHANGE			; Prepare to read CHANGE input
 		MOVB R1, [R0]			; Read CHANGE
 		CMP R1, 1			; Check if it's on
 		JEQ CHANGE_MENU			; If so, go to the corresponding sub-routine
+		MOV R0, PESO			; If not, prepare to read the PESO on the peripheric
 		MOV R1, [R0]			; Read PESO
 		CMP R1, R7			; Check if the PESO In the peripheric is the same as the last known PESO
 		JEQ SKIP_DISPLAY_UPDATE		; If it's the same, do nothing
