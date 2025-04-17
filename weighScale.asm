@@ -256,11 +256,14 @@ WEIGHT_SCALE_CYCLE:
 		MOV R1, [R0]			; Read PESO
 		CALL STORE_WEIGHT		; Stores the weight of the purchase
 		CALL STORE_FINAL_PRICE		; Stores the price of the purchase
+		CALL DISPLAY_TOTAL_PRICE_START	;
+
 		CMP R1, R7			; Check if the PESO In the peripheric is the same as the last known PESO
 		JEQ SKIP_DISPLAY_UPDATE		; If it's the same, do nothing
 		CALL DISPLAY_WEIGHT_START	; If not the same, display the new PESO value
 		MOV R7, [R0]			; Update the last known PESO
-		
+
+			
 SKIP_DISPLAY_UPDATE:
 		MOV R0, PRODUCT_CODE		; Prepare to read PRODUCT_CODE
 		MOV R10, MIN_PRODUCT_CODE	; Load the minimum valid code (100)
@@ -513,6 +516,22 @@ DISPLAY_PRICE:
 		CALL DISPLAY_NUMBER
         	RET		        	;
 
+; ===========================
+; === Display Total Price ===
+; ===========================
+DISPLAY_TOTAL_PRICE_START:
+		MOV R0, R8
+		MOV R7, 64H
+		MOV R8, 01H 
+CONVERT_TOTAL_PRICE:
+		CALL CONVERT_FOR_DISPLAY
+DISPLAY_TOTAL_PRICE:
+		MOV R6, 26CH
+		MOV R0, 3
+		MOV R10, 2
+		CALL DISPLAY_NUMBER
+		RET
+
 ; ======================================
 ; === Sub-Routine To Read User Input === 
 ; ======================================
@@ -705,20 +724,23 @@ STORE_WEIGHT:
 	RET
 
 STORE_FINAL_PRICE:
-	CALL FIND_SPECIFIC_PRICE	; R11 now holds the adress of the price of the product
-	MOV R9, R1			; R9 has a copy of the weight
-	MOV R10, R1			; R10 has a copy of the weight
+	CALL FIND_SPECIFIC_PRICE
+					; R1 holds the weight
+	MOV R2, R1			; R2 has a copy of the weight
 	MOV R8, 10			; 10, to divide
-	DIV R9, R8			; R9 holds the whole part of the division
-	MOD R10, R8			; R10 holds the decimal part of the division
-	MOV R8, [R11]			; R8 now holds the price of the current product
-	MUL R9, R8			; R9 gets multiplied by the pricce of the product
-	MUL R10, R8			; R10 gets multiplied by the pricce of the product
-	MOV R8, 10			; 10, to divide, again
-	DIV R10, R8			; R10 gets divided by 10
-	ADD R9, R10			; Sum R9 and R10
+	DIV R1, R8			; R9 holds the whole part of the division
+	MOD R2, R8			; R2 holds the decimal part of the division
+	MOV R7, [R11]			; R7 now holds the price of the current product
+	MUL R1, R7			; R9 gets multiplied by the price of the product
+	MUL R2, R7			; R2 gets multiplied by the price of the product
+	MOV R3, R2
+	MOV R9, 5			; --- round up here ---
+					; Needs: R2(decimal part); R8(10); R3(copy of R2); R9(5)
+	CALL ROUND_UNIT
+					
+	ADD R1, R2			; Sum R9 and R2
 	MOV R8, 5004H			; R8 now holds the adress where the price will be stored
-	MOV [R8], R9			; Stores the price
+	MOV [R8], R1			; Stores the price
 	RET
 
 STORE_PRODUCT_CODE:
