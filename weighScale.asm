@@ -254,10 +254,13 @@ WEIGHT_SCALE_CYCLE:
 		JEQ CHANGE_MENU			; If so, go to the corresponding sub-routine
 		MOV R0, PESO			; If not, prepare to read the PESO on the peripheric
 		MOV R1, [R0]			; Read PESO
+		CALL STORE_WEIGHT		; Stores the weight of the purchase
+		CALL STORE_FINAL_PRICE		; Stores the price of the purchase
 		CMP R1, R7			; Check if the PESO In the peripheric is the same as the last known PESO
 		JEQ SKIP_DISPLAY_UPDATE		; If it's the same, do nothing
 		CALL DISPLAY_WEIGHT_START	; If not the same, display the new PESO value
 		MOV R7, [R0]			; Update the last known PESO
+		
 SKIP_DISPLAY_UPDATE:
 		MOV R0, PRODUCT_CODE		; Prepare to read PRODUCT_CODE
 		MOV R10, MIN_PRODUCT_CODE	; Load the minimum valid code (100)
@@ -282,6 +285,7 @@ CHANGE_MENU:
 ; === Sub-routine to fill the display with dynamic data ===
 ; =========================================================
 FILL_WEIGHT_SCALE:
+		CALL STORE_PRODUCT_CODE		; Stores the PRODUCT_CODE
 		CALL FIND_ID			; Look for the current PRODUCT_CODE within the memory
 		CALL DISPLAY_NAME		; Display the name of the corresponding item
 		MOV R0, PESO			; Prepare to read PESO
@@ -290,6 +294,7 @@ FILL_WEIGHT_SCALE:
 		CALL DISPLAY_WEIGHT_START	; Display the weight (starts at zero because no product has been weighed yet)
 		CALL FIND_PRICE			; Look for the price of the current item within the memory
 		CALL DISPLAY_PRICE_START	; Display the price of the item
+		
 		CALL CLEAR_PERIPHERICS		; Clear peripherics
 		RET				; Return
 
@@ -465,6 +470,15 @@ DISPLAY_WEIGHT:                  		; R6 -> Start of the display
 ; ===================
 ; === Find Price  ===
 ; ===================
+
+FIND_SPECIFIC_PRICE:
+		MOV R0, 5000H
+        	MOV R11, 4000H             	;
+		MOV R10, [R0]
+        	MOV R9, 20            		;
+        	MOV R8, 18            		;
+        	JMP FIND_PRICE_LOOP        	;
+
 FIND_PRICE:
 		MOV R0, PRODUCT_CODE
         	MOV R11, 4000H             	;
@@ -677,3 +691,33 @@ PROCESS_END:
 		RET				; End digit processing and return
 
 
+; ==============================
+; === Store the total price ===
+; =============================
+STORE_WEIGHT:
+	MOV R8, 5002H			; Where will be stored the purcahsed products's weight
+	MOV [R8], R1			; Store the weight
+	RET
+
+STORE_FINAL_PRICE:
+	CALL FIND_SPECIFIC_PRICE	; R11 now holds the adress of the price of the product
+	MOV R9, R1			; R9 has a copy of the weight
+	MOV R10, R1			; R10 has a copy of the weight
+	MOV R8, 10			; 10, to divide
+	DIV R9, R8			; R9 holds the whole part of the division
+	MOD R10, R8			; R10 holds the decimal part of the division
+	MOV R8, [R11]			; R8 now holds the price of the current product
+	MUL R9, R8			; R9 gets multiplied by the pricce of the product
+	MUL R10, R8			; R10 gets multiplied by the pricce of the product
+	MOV R8, 10			; 10, to divide, again
+	DIV R10, R8			; R10 gets divided by 10
+	ADD R9, R10			; Sum R9 and R10
+	MOV R8, 5004H			; R8 now holds the adress where the price will be stored
+	MOV [R8], R9			; Stores the price
+	RET
+
+STORE_PRODUCT_CODE:
+	MOV R8, 5000H			; Where will be stored the purchased product's PRODUCT_CODE
+	MOV R9, [R0]			; Temporarly hold the PRODUCT_CODE
+	MOV [R8], R9			; Store the PRODUCT_CODE
+	RET
