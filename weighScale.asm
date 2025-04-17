@@ -450,7 +450,12 @@ CHECK_WEIGHT_LIMIT:
 		MOV R1, [R0]			; Read the value of PESO to R1
 		MOV R2, MAX_WEIGHT		; Load MAX_WEIGHT (300cg) to R2
 		CMP R1, R2			; Compare the input with the maximum
-		JLE CONVERT_WEIGHT		; If not greater than maximum, convert it to kg
+		JGT SET_ZERO
+		MOV R2, 0
+		CMP R1, R2
+		JLT SET_ZERO
+		JMP CONVERT_WEIGHT		; If not greater than maximum, convert it to kg
+SET_ZERO:
 		MOV R1, 0			; If greater than maximum, set the weight to zero
 		MOV [R0], R1			; Write zero on the PESO peripheric
 CONVERT_WEIGHT:
