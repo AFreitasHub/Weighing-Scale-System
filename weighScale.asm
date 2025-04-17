@@ -691,9 +691,9 @@ PROCESS_END:
 		RET				; End digit processing and return
 
 
-; ==============================
-; === Store the total price ===
-; =============================
+; =================================
+; === Store in memory temporary ===
+; =================================
 STORE_WEIGHT:
 	MOV R8, 5002H			; Where will be stored the purcahsed products's weight
 	MOV [R8], R1			; Store the weight
