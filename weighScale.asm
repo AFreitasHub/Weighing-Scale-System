@@ -163,23 +163,23 @@ SELECT_FRUIT_MENU:
 
 Place 2380H
 ASK_TO_DELETE:
-        String " ESTÁ PRESTES A "
-        String " ELIMINAR TODOS "
-        String "  OS REGISTOS   "
-        String "                "
-        String " OK -> DELETAR  " 
-        String "  CANCEL PARA   "
-        String " VOLTAR AO MENU "
+        	String " ESTÁ PRESTES A "
+        	String " ELIMINAR TODOS "
+        	String "  OS REGISTOS   "
+       	 	String "                "
+        	String " OK -> DELETAR  " 
+        	String "  CANCEL PARA   "
+        	String " VOLTAR AO MENU "
 
 PLACE 2400H
 CONFIRM_DELETED:
-        String "    TODOS OS    "
-        String "    REGISTOS    "
-        String "  ACABARAM DE   "
-        String " SER ELIMINADOS "
-        String "                " 
-        String " PRIMA OK PARA  "
-        String " VOLTAR AO MENU "
+        	String "    TODOS OS    "
+        	String "    REGISTOS    "
+        	String "  ACABARAM DE   "
+        	String " SER ELIMINADOS "
+        	String "                " 
+        	String " PRIMA OK PARA  "
+        	String " VOLTAR AO MENU "
 
 Place 1F80H
 OVERFLOW_ERROR:
@@ -252,8 +252,8 @@ OPTION_MENU_HISTORY:
 ; === Reset (Option 3) ===
 ; ========================
 OPTION_RESET:
-        CALL CONFIRM_TO_DELETE
-        JMP ON
+        	CALL CONFIRM_TO_DELETE
+        	JMP ON
 
 ; ==============================================
 ; === Weight Scale (Option 1) - SUB-ROUTINES ===
