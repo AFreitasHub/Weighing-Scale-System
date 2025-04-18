@@ -161,6 +161,16 @@ SELECT_FRUIT_MENU:
 		String "5 - E           "	; 0254H
 		String "CHANGE = PRÓXIMO"
 
+Place 1F80H
+OVERFLOW_ERROR:
+		String " ERRO: OVERFLOW "
+		String "----------------"
+		String " PESO DEMASIADO "
+		String "    ELEVADO!    "
+		String "                "
+		String "  PRESSIONE OK  "
+		String " PARA CONTINUAR "
+
 ; ====================
 ; === Main Program ===
 ; ====================
@@ -336,7 +346,11 @@ FETCH_PRODUCTS:
 ; ===========================
 ; === Wait For User Input ===
 ; ===========================
-CHECK_INPUT:
+CHECK_INPUT:	
+		MOV R0, CANCEL
+		MOVB R1, [R0]
+		CMP R1, 0
+		JNE CANCEL_CHANGE
 		MOV R0, CHANGE
 		MOVB R1, [R0]
 		CMP R1, 0
@@ -392,6 +406,8 @@ END:
 		MOV R2, [R1]
 		MOV [R0], R2
 		RET
+CANCEL_CHANGE:
+		JMP WEIGHT_SCALE_MAIN
 
 ; ======================
 ; === Display Helper ===
@@ -719,7 +735,7 @@ PROCESS_END:
 ; === Store in memory temporary ===
 ; =================================
 STORE_WEIGHT:
-	MOV R8, 5002H			; Where will be stored the purcahsed products's weight
+	MOV R8, 5002H			; Where will be stored the purchased products's weight
 	MOV [R8], R1			; Store the weight
 	RET
 
@@ -728,21 +744,34 @@ STORE_FINAL_PRICE:
 					; R1 holds the weight
 	MOV R2, R1			; R2 has a copy of the weight
 	MOV R8, 10			; 10, to divide
-	DIV R1, R8			; R9 holds the whole part of the division
+	DIV R1, R8			; R1 holds the whole part of the division
 	MOD R2, R8			; R2 holds the decimal part of the division
 	MOV R7, [R11]			; R7 now holds the price of the current product
-	MUL R1, R7			; R9 gets multiplied by the price of the product
+	MUL R1, R7			; R1 gets multiplied by the price of the product
 	MUL R2, R7			; R2 gets multiplied by the price of the product
-	MOV R3, R2
-	MOV R9, 5			; --- round up here ---
-					; Needs: R2(decimal part); R8(10); R3(copy of R2); R9(5)
-	CALL ROUND_UNIT
-					
-	ADD R1, R2			; Sum R9 and R2
+	MOV R3, R2			; R3 holds copy of R2 which will be used for rounding
+	MOV R9, 5			; Rounding threshold 
+	CALL ROUND_UNIT			; Round up if needed
+	ADD R1, R2			; Sum R1 and R2
+	JV OVERFLOW_MESSAGE		; If overflow is detected, display a warning
 	MOV R8, 5004H			; R8 now holds the adress where the price will be stored
 	MOV [R8], R1			; Stores the price
 	RET
-
+OVERFLOW_MESSAGE:
+	MOV R2, OVERFLOW_ERROR 		; Load overflow warning message
+	CALL SHOW_DISPLAY		; Show it on the display
+	CALL CLEAR_PERIPHERICS		; Clear all peripherics
+	MOV R0, OK			; Prepare to read OK
+OVERFLOW:
+	MOVB R1, [R0]			; Read OK
+	CMP R1, 1			; Check if OK is on
+	JNE OVERFLOW			; If it's not on, check again
+RESTORE_PRODUCT_CODE:			; If it's on, prepare to take the user back
+	MOV R8, 5000H			; Place in memory where the PRODUCT_CODE was temporarily stored
+	MOV R0, PRODUCT_CODE		; PRODUCT_CODE peripheric
+	MOV R1, [R8]			; Read the product code of the last item weighted
+	MOV [R0], R1			; Write it down on the PRODUCT_CODE peripheric so it loads back the correct display
+	JMP WEIGHT_SCALE_MAIN		; Go back to the weighing scale menu (option 1)
 STORE_PRODUCT_CODE:
 	MOV R8, 5000H			; Where will be stored the purchased product's PRODUCT_CODE
 	MOV R9, [R0]			; Temporarly hold the PRODUCT_CODE
