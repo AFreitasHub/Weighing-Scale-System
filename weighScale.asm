@@ -787,6 +787,11 @@ STORE_FINAL_PRICE:
 	MOV R7, [R11]			; R7 now holds the price of the current product
 	MUL R1, R7			; R1 gets multiplied by the price of the product
 	MUL R2, R7			; R2 gets multiplied by the price of the product
+	CMP R1, 0
+	JLT OVERFLOW_MESSAGE
+	CMP R2, 0
+	JLT OVERFLOW_MESSAGE
+
 	MOV R3, R2			; R3 holds copy of R2 which will be used for rounding
 	MOV R9, 5			; Rounding threshold 
 	CALL ROUND_UNIT			; Round up if needed
