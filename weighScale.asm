@@ -276,6 +276,10 @@ WEIGHT_SCALE_CYCLE:
 			
 SKIP_DISPLAY_UPDATE:
 		MOV R0, PRODUCT_CODE		; Prepare to read PRODUCT_CODE
+		MOV R11, [R0]
+		MOV R10, 0
+		CMP R11, R10
+		JEQ CHECK_TO_SAVE
 		MOV R10, MIN_PRODUCT_CODE	; Load the minimum valid code (100)
 		MOV R11, MAX_PRODUCT_CODE	; Load the maximum valid code (124)
 		MOV R3, [R0]			; Read the value in PRODUCT_CODE
@@ -294,6 +298,15 @@ CHANGE_MENU:
 		CALL CHANGE_ITEM		; Sub-routine that allows the user to select one item from a list
 		JMP WEIGHT_SCALE		; Loop back once a product has been chosen
 
+CHECK_TO_SAVE:
+		MOV R0, OK
+		MOVB R11, [R0]
+		CMP R11, 1
+		JEQ SAVE_IT
+		JMP WEIGHT_SCALE_CYCLE
+SAVE_IT:
+	CALL SAVE_ON_MEMORY
+	RET
 ; =========================================================
 ; === Sub-routine to fill the display with dynamic data ===
 ; =========================================================
@@ -777,3 +790,101 @@ STORE_PRODUCT_CODE:
 	MOV R9, [R0]			; Temporarly hold the PRODUCT_CODE
 	MOV [R8], R9			; Store the PRODUCT_CODE
 	RET
+
+; =======================================
+; === Save and delete stored purchases===
+; =======================================
+SAVE_ON_MEMORY:
+		CALL PURCHASED_CONFIRMED
+		MOV R0, 4FF0H			; R0 has the adress of the number of all purchases made
+		MOV R1, [R0]			; R1 now has the number of times a purchase has been made
+		MOV R0, 5000H			; R0 has the adress of the PRODUCT_CODE of the product from the last purchase
+		MOV R2, 6H			; 6, the number of adresses reserved for each purchase, each purchase holds the adress of the PRODUCT_CODE of the product (2 bytes), the weight of the product (2 bytes) and the price of the purchase (2 bytes)
+		MOV R3, 2H			; 2
+		MOV R4, 1H			; 1
+		MOV R5, R1			; R5 now has the number of times a purchase has been made
+		SUB R5, R4			; R5 now will be able to count how many purchases have been made and are on memory
+		JMP GET_FIRST_PURCH_PC		; It will get the adress of the PRODUCT_CODE of the first ever purchase
+
+GET_FIRST_PURCH_PC:
+		CMP R5, 0			;
+		JEQ CHECK_IF_TO_SAVE_ON_MEMORY	; R0 now has the PRODUCT_CODE of the first ever purchase
+		JMP FIRST_NAME_LOOP		; R0 doesnt have the adress of the name of the first ever purchase's name
+
+FIRST_NAME_LOOP:
+		ADD R0, R2			; R0 now has the product of the purchase to the right
+		SUB R5, R4			; R5 now has -1
+		JMP GET_FIRST_PURCH_PC		; Checks if now R0 has the adress of the product code of the firsst ever purchase or not
+
+CHECK_IF_TO_SAVE_ON_MEMORY:
+		CMP R1, 0			; Checks if the number of purchases is positive to see if there needs to me moved or not
+		JGT SAVING_ON_MEMORY		; If there are still memories to move it will do so
+		RET				; Volta para o menu principal
+
+SAVING_ON_MEMORY:
+		MOV R11, [R0]			; R11 has the PRODUCT_CODE of the purchase
+		ADD R0, R2			; R0 has the adress of the PRODUCT_CODE where the purchase's PRODUCT_CODE will be stored
+		MOV [R0], R11			; Now the PRODUCT_CODE of the purchase has been stored
+		SUB R0, R3			;
+		SUB R0, R3			; R0 has the adress of the weight of the purchase's product
+		MOV R11, [R0]			; R11 has the contents of the adress of the weight of the purchase
+		ADD R0, R2			; R0 has the adress of the weight where the purchase's weight will be stored
+		MOV [R0], R11			; Now the weight of the purchase has been stored
+		SUB R0, R3
+		SUB R0, R3			; R0 has the adress of the price of the purchase's product	
+		MOV R11, [R0]			; R11 has the contents of the adress of the price of the purchase
+		ADD R0, R2			; R0 has the adress of the price where the purchase's price will be stored
+		MOV [R0], R11			; Now the price of the purchase has been stored
+		SUB R0, R3			;
+		SUB R0, R3			;
+		SUB R0, R3			;
+		SUB R0, R3			;
+		SUB R0, R3			; R0 - 10 so that now R0 has the adress is started with
+		SUB R0, R2			; R0 now has the adress of the next iteration
+		SUB R1, R4			; -1 iteration to do
+		JMP CHECK_IF_TO_SAVE_ON_MEMORY 	; Checks to see if there are any more iterations left
+
+PURCHASED_CONFIRMED:
+		MOV R0, 4FF0H
+		MOV R1, [R0]
+		ADD R1, 1
+		MOV [R0], R1
+		RET
+
+CLEAR_HISTORY:
+		MOV R0, 4FF0H			; R0 holds the adress where the number of purchases has been made
+		MOV R1, [R0]			; R1 holds the ammount of times a purchase has been made
+		MOV R2, 0H			; 0
+		MOV [R0], R2			; Now the number of purchases made is 0
+
+		MOV R3, R1			; R3 holds the ammount of times a purchase has been made previously from being set to 0
+		MOV R0, 5000H			
+		MOV R4, 6H			; 6
+		MOV R5, 2H			; 2
+		CALL ADRESS_FIRST_PRICE		; Now R0 holds the adress of the price of the first ever purchase
+		MOV R6, 5000H
+		MOV R7, 0H			; 0
+		CALL SET_IT_TO_ZERO		; Will make every single adress from 5000H till the last adress that was filled to 0
+		RET
+		
+ADRESS_FIRST_PRICE:
+		CMP R3, 0
+		JGT ADRESS_PRICE_LOOP
+		ADD R0, R5			; R0 was the adress of the first purchase PRODUCT_CODE but now its the price
+		RET
+
+ADRESS_PRICE_LOOP:
+		ADD R0, R4
+		SUB R3, 1			; R3 = R3 - 1
+		JMP ADRESS_FIRST_PRICE
+
+
+SET_IT_TO_ZERO:
+		CMP R0, R6
+		JGE MAKE_IT_ZERO
+		RET
+
+MAKE_IT_ZERO:
+		MOV [R0], R7
+		SUB R0, R5
+		JMP SET_IT_TO_ZERO
