@@ -193,6 +193,10 @@ ON:
 		CALL SHOW_DISPLAY		; Display the main menu
 		CALL CLEAR_PERIPHERICS		; Clear peripherics
 READ_INPUT:
+		MOV R0, ON_OFF
+		MOVB R1, [R0]
+		CMP R1, 0
+		JEQ BEGINNING
 		MOV R0, SEL_NR_MENU		; Prepare to read user input
 		MOVB R1, [R0]			; Read the user input
 		CMP R1, 0			; Check if there's no user input
