@@ -783,6 +783,7 @@ OVERFLOW:
 	MOVB R1, [R0]			; Read OK
 	CMP R1, 1			; Check if OK is on
 	JNE OVERFLOW			; If it's not on, check again
+	CALL CLEAR_PERIPHERICS
 RESTORE_PRODUCT_CODE:			; If it's on, prepare to take the user back
 	MOV R8, 5000H			; Place in memory where the PRODUCT_CODE was temporarily stored
 	MOV R0, PRODUCT_CODE		; PRODUCT_CODE peripheric
