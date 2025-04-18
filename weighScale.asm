@@ -161,6 +161,26 @@ SELECT_FRUIT_MENU:
 		String "5 - E           "	; 0254H
 		String "CHANGE = PRÓXIMO"
 
+Place 2380H
+ASK_TO_DELETE:
+        String " ESTÁ PRESTES A "
+        String " ELIMINAR TODOS "
+        String "  OS REGISTOS   "
+        String "                "
+        String " OK -> DELETAR  " 
+        String "  CANCEL PARA   "
+        String " VOLTAR AO MENU "
+
+PLACE 2400H
+CONFIRM_DELETED:
+        String "    TODOS OS    "
+        String "    REGISTOS    "
+        String "  ACABARAM DE   "
+        String " SER ELIMINADOS "
+        String "                " 
+        String " PRIMA OK PARA  "
+        String " VOLTAR AO MENU "
+
 Place 1F80H
 OVERFLOW_ERROR:
 		String " ERRO: OVERFLOW "
@@ -232,7 +252,8 @@ OPTION_MENU_HISTORY:
 ; === Reset (Option 3) ===
 ; ========================
 OPTION_RESET:
-		JMP OPTION_RESET
+        CALL CONFIRM_TO_DELETE
+        JMP ON
 
 ; ==============================================
 ; === Weight Scale (Option 1) - SUB-ROUTINES ===
@@ -874,6 +895,7 @@ CLEAR_HISTORY:
 ADRESS_FIRST_PRICE:
 		CMP R3, 0
 		JGT ADRESS_PRICE_LOOP
+		ADD R0, R5			
 		ADD R0, R5			; R0 was the adress of the first purchase PRODUCT_CODE but now its the price
 		RET
 
@@ -892,3 +914,51 @@ MAKE_IT_ZERO:
 		MOV [R0], R7
 		SUB R0, R5
 		JMP SET_IT_TO_ZERO
+
+; =========================================
+; === Deleting of registrations routine ===
+; =========================================
+CONFIRM_TO_DELETE:
+        MOV R2, ASK_TO_DELETE        ; Load the menu that will ask the user if he truly wants to delete all his registrations
+        CALL SHOW_DISPLAY        ; Display the menu
+        CALL CLEAR_PERIPHERICS
+        MOV R0, OK
+        MOV R1, CANCEL
+        CALL TO_DELETE
+        RET
+
+TO_DELETE:
+        
+        MOVB R11, [R0]
+        CMP R11, 1
+        JEQ DELETING
+        MOVB R11, [R1]
+        CMP R11, 1
+        JEQ CANCEL_DELETE
+        JMP TO_DELETE
+
+DELETING:
+        MOV R2, CONFIRM_DELETED
+        CALL SHOW_DISPLAY
+        CALL CLEAR_HISTORY
+        CALL ALL_REG_DELETED
+        RET
+
+CANCEL_DELETE:
+        CALL CLEAR_PERIPHERICS        ; Clear peripherics
+        RET                ; Return
+
+ALL_REG_DELETED:
+        CALL CLEAR_PERIPHERICS
+        CALL REG_DELETED
+        RET
+
+REG_DELETED:
+        MOV R1, OK
+        MOVB R11, [R1]
+        CMP R11, 1
+        JEQ RETURNING
+        JMP REG_DELETED
+
+RETURNING:
+	RET
