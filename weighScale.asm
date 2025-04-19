@@ -289,13 +289,12 @@ WEIGHT_SCALE_CYCLE:
 		JEQ CHANGE_MENU			; If so, go to the corresponding sub-routine
 		MOV R0, PESO			; If not, prepare to read the PESO on the peripheric
 		MOV R1, [R0]			; Read PESO
-		CALL STORE_WEIGHT		; Stores the weight of the purchase
-		CALL STORE_FINAL_PRICE		; Stores the price of the purchase
-		CALL DISPLAY_TOTAL_PRICE_START	;
 
 		CMP R1, R7			; Check if the PESO In the peripheric is the same as the last known PESO
 		JEQ SKIP_DISPLAY_UPDATE		; If it's the same, do nothing
+		CALL DISPLAY_TOTAL_PRICE_START	;
 		CALL DISPLAY_WEIGHT_START	; If not the same, display the new PESO value
+		CALL STORE_WEIGHT_AND_PRICE
 		MOV R7, [R0]			; Update the last known PESO
 
 			
@@ -772,6 +771,13 @@ PROCESS_END:
 ; =================================
 ; === Store in memory temporary ===
 ; =================================
+STORE_WEIGHT_AND_PRICE:
+	MOV R0, PESO
+	MOV R1, [R0]
+	CALL STORE_WEIGHT
+	CALL STORE_FINAL_PRICE
+	RET
+
 STORE_WEIGHT:
 	MOV R8, 5002H			; Where will be stored the purchased products's weight
 	MOV [R8], R1			; Store the weight
