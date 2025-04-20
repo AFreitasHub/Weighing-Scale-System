@@ -342,8 +342,10 @@ WEIGHT_HISTORY:
 		CALL CLEAR_PERIPHERICS		; Clear the peripherics
 		MOV R0, 4FF0H			; Prepare to read how many entries exist in memory
 		MOV R1, [R0]			; Read how many entries exist in memory
+	
 		MOV R0, 5006H			; First product code
 WEIGHT_HISTORY_CYCLE:
+		PUSH R1
 		CALL FIND_ID			; Based on the product code in R0, find the name of the product
 		MOV R6, 227H			; Where the name must be written
 		MOV R5, 0			; Initialize character counter
@@ -353,14 +355,38 @@ WEIGHT_HISTORY_CYCLE:
 		MOV R6, 23AH			; Where the weight should be displayed
 		MOV R7, 0AH			; 10, used for conversion (10cg is 1kg) 
 		MOV R8, 01H			; 1, will be used to skip rounding (there's no need to round up in this case)
+		PUSH R0
 		CALL CONVERT_WEIGHT		; Convert and display the weight
+		POP R0
 		ADD R0, 2			; Prepare to read the price
 		MOV R6, 24CH			; Where the price should be displayed
 		MOV R7, 64H			; 100, used for conversion (cent/hg to eur/kg)
 		MOV R8, 01H			; 1 to skip rounding
+		PUSH R0
 		CALL CONVERT_TOTAL_PRICE	; Convert and display the price
-LOOP:
-		JMP LOOP	
+		POP R0
+		POP R1
+CHECK_CANCEL:	
+		MOV R2, CANCEL
+		MOVB R3, [R2]
+		CMP R3, 0
+		JNE CANCEL_HISTORY
+CHECK_NEXT:
+		MOV R2, CHANGE 
+		MOVB R3, [R2]
+		CMP R3, 0
+		JEQ CHECK_CANCEL
+NEXT: 		
+		SUB R1, 1
+		CMP R1, 0
+		JEQ WRAP
+		CALL CLEAR_PERIPHERICS
+		ADD R0, 2
+		JMP WEIGHT_HISTORY_CYCLE
+WRAP: 
+		JMP WEIGHT_HISTORY	
+CANCEL_HISTORY:
+		RET
 
 
 ; =========================================================
