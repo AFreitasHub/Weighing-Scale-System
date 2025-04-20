@@ -124,13 +124,13 @@ WEIGHT_SCALE_MENU:
 		String "Total:       EUR"
 Place 2100H
 HISTORY_MENU:
-		String "                "
-		String "                "
-		String "                "
-		String "                "
-		String "                "
-		String "                "
-		String "                "
+		String "   HISTÓRICO    "
+		String "----------------"
+		String "Nome:           "
+		String "Peso:  00.0KG   "
+		String "Total: 000.00EUR"
+		String "----------------"
+		String "PRÓXIMO [CHANGE]"
 					
 Place 2180H				
 ERROR_MENU:		
@@ -159,7 +159,7 @@ SELECT_FRUIT_MENU:
 		String "3 - C           " 	; 0234H
 		String "4 - D           " 	; 0244H	
 		String "5 - E           "	; 0254H
-		String "CHANGE = PRÓXIMO"
+		String "PRÓXIMO [CHANGE]"
 
 Place 2380H
 ASK_TO_DELETE:
@@ -231,9 +231,9 @@ MODE_SELECTION:
 		JEQ OPTION_RESET		; Jump to option 3
 		CALL SHOW_ERROR			; If no valid option was chosen, show error
 		JMP ON				; Loop back to the starting menu
-; ======================================
-; === Weight Scale (Option 1) - MAIN ===
-; ======================================
+; ========================================
+; === Weighing Scale (Option 1) - MAIN ===
+; ========================================
 OPTION_WEIGHT_SCALE:
 		MOV R0, PRODUCT_CODE		; Prepare to read PRODUCT_CODE input
 		MOV R10, MIN_PRODUCT_CODE
@@ -242,11 +242,12 @@ OPTION_WEIGHT_SCALE:
 		CALL WEIGHT_SCALE_MAIN		; Check if any PRODUCT_CODE was given
 		JMP ON
 
-; =================================
-; === Weight History (Option 2) ===
-; =================================
+; ===================================
+; === Weighing History (Option 2) ===
+; ===================================
 OPTION_MENU_HISTORY:
-		JMP OPTION_MENU_HISTORY
+		CALL WEIGHT_HISTORY
+		JMP ON
 
 ; ========================
 ; === Reset (Option 3) ===
@@ -255,9 +256,9 @@ OPTION_RESET:
         	CALL CONFIRM_TO_DELETE
         	JMP ON
 
-; ==============================================
-; === Weight Scale (Option 1) - SUB-ROUTINES ===
-; ==============================================
+; ================================================
+; === Weighing Scale (Option 1) - SUB-ROUTINES ===
+; ================================================
 WEIGHT_SCALE_MAIN:
 		CMP R1, 0			; Check if there was user input (PRODUCT_CODE)
 		JEQ WEIGHT_SCALE_EMPTY		; If not, display warning message				
@@ -329,8 +330,39 @@ CHECK_TO_SAVE:
 		JEQ SAVE_IT
 		JMP WEIGHT_SCALE_CYCLE
 SAVE_IT:
-	CALL SAVE_ON_MEMORY
-	RET
+		CALL SAVE_ON_MEMORY
+		RET
+
+; ==================================================
+; === Weighing History (Option 2) - SUB-ROUTINES ===
+; ==================================================
+WEIGHT_HISTORY:
+		MOV R2, HISTORY_MENU		; Load the menu for weighing history
+		CALL SHOW_DISPLAY		; Display the menu
+		CALL CLEAR_PERIPHERICS		; Clear the peripherics
+		MOV R0, 4FF0H			; Prepare to read how many entries exist in memory
+		MOV R1, [R0]			; Read how many entries exist in memory
+		MOV R0, 5006H			; First product code
+WEIGHT_HISTORY_CYCLE:
+		CALL FIND_ID			; Based on the product code in R0, find the name of the product
+		MOV R6, 227H			; Where the name must be written
+		MOV R5, 0			; Initialize character counter
+		MOV R4, 9			; Max amount of characters that can be displayed
+		CALL DISPLAY_NAME_CYCLE		; Display the name
+		ADD R0, 2			; Prepare to read the weight
+		MOV R6, 23AH			; Where the weight should be displayed
+		MOV R7, 0AH			; 10, used for conversion (10cg is 1kg) 
+		MOV R8, 01H			; 1, will be used to skip rounding (there's no need to round up in this case)
+		CALL CONVERT_WEIGHT		; Convert and display the weight
+		ADD R0, 2			; Prepare to read the price
+		MOV R6, 24CH			; Where the price should be displayed
+		MOV R7, 64H			; 100, used for conversion (cent/hg to eur/kg)
+		MOV R8, 01H			; 1 to skip rounding
+		CALL CONVERT_TOTAL_PRICE	; Convert and display the price
+LOOP:
+		JMP LOOP	
+
+
 ; =========================================================
 ; === Sub-routine to fill the display with dynamic data ===
 ; =========================================================
@@ -489,16 +521,17 @@ FOUND_ID:
 DISPLAY_NAME:
 		MOV R6, DISPLAY_START		; Load the address where the display starts
 		MOV R5, 0			; Initialize a counter
-		MOV R4, STRING_SIZE		; Load the size of a string (16)
+		MOV R4, STRING_SIZE		; Load the max size of a string (16)
 DISPLAY_NAME_CYCLE:
-		MOV R7, [R11]			; Read the first two characters of the product's name from the table
-		MOV [R6], R7			; Write 2 characters to the display address
-		ADD R6, 2			; Shift the display address to the right by 2
-		ADD R11, 2			; Prepare to read the next two characters of the name
-		ADD R5, 2			; Increment the counter by the amount of characters written
-		CMP R5, R4			; Check if we've written 16 characters already
-		JEQ DISPLAY_WEIGHT_START  	; Stop writing on the display once 16 characters have been written
-		JMP DISPLAY_NAME_CYCLE		; If we haven't written 16 characters yet, keep going
+		MOVB R7, [R11]			; Read the first character of the product's name from the table
+		MOVB [R6], R7			; Write 1 characters to the display address
+		ADD R6, 1			; Shift the display address to the right by 1
+		ADD R11, 1			; Prepare to read the next character of the name
+		ADD R5, 1			; Increment the counter by the amount of characters written
+		CMP R5, R4			; Check if we've written all characters already
+		JEQ DISPLAY_NAME_END	  	; Stop writing on the display once all characters have been written
+		JMP DISPLAY_NAME_CYCLE		; If we haven't written all characters yet, keep going
+DISPLAY_NAME_END:
 		RET				; Returns
 ; ======================			
 ; === Display Weight ===			
@@ -507,6 +540,7 @@ DISPLAY_WEIGHT_START:
 		MOV R0, PESO			; Load PESO to R0
 		MOV R7, 0AH			; 10, used for conversion (10cg is 1kg) 
 		MOV R8, 01H			; 1, will be used to skip rounding (there's no need to round up in this case)
+		MOV R6, 23DH                   	; For line positioning
 CHECK_WEIGHT_LIMIT:
 		MOV R1, [R0]			; Read the value of PESO to R1
 		MOV R2, MAX_WEIGHT		; Load MAX_WEIGHT (300cg) to R2
@@ -515,14 +549,13 @@ CHECK_WEIGHT_LIMIT:
 		MOV R2, 0
 		CMP R1, R2
 		JLT SET_ZERO
-		JMP CONVERT_WEIGHT		; If not greater than maximum, convert it to kg
+		JMP CONVERT_WEIGHT		; If not greater than maximum, convert it to kg		
 SET_ZERO:
 		MOV R1, 0			; If greater than maximum, set the weight to zero
 		MOV [R0], R1			; Write zero on the PESO peripheric
 CONVERT_WEIGHT:
 		CALL CONVERT_FOR_DISPLAY	; Convert the value in PESO peripheric from cg to kg		
 DISPLAY_WEIGHT:                  		; R6 -> Start of the display
-		MOV R6, 23DH                   	; For line positioning
     		MOV R0, 2			; Amount of digits the whole part should have in the display
 		MOV R10, 1			; Amount of digits the decimal part should have in the display
 		CALL DISPLAY_NUMBER 		; Write weight on the display
@@ -573,16 +606,16 @@ DISPLAY_PRICE:
 ; === Display Total Price ===
 ; ===========================
 DISPLAY_TOTAL_PRICE_START:
-		MOV R0, R8
-		MOV R7, 64H
-		MOV R8, 01H 
+		MOV R0, R8			; R0 now holds the address where the total price is stored
+		MOV R7, 64H			; 100, will be used for conversion
+		MOV R8, 01H 			; 1, skips rounding up (total price has already been rounded up)
+		MOV R6, 26CH			; Position where the number should be written
 CONVERT_TOTAL_PRICE:
-		CALL CONVERT_FOR_DISPLAY
+		CALL CONVERT_FOR_DISPLAY	; Convert the total price from cent/hg to eur/kg
 DISPLAY_TOTAL_PRICE:
-		MOV R6, 26CH
-		MOV R0, 3
-		MOV R10, 2
-		CALL DISPLAY_NUMBER
+		MOV R0, 3			; Number of digits the whole part should have
+		MOV R10, 2			; Number of digits the decimal part should have
+		CALL DISPLAY_NUMBER		; Display the number
 		RET
 
 ; ======================================
@@ -772,61 +805,61 @@ PROCESS_END:
 ; === Store in memory temporary ===
 ; =================================
 STORE_WEIGHT_AND_PRICE:
-	MOV R0, PESO
-	MOV R1, [R0]
-	CALL STORE_WEIGHT
-	CALL STORE_FINAL_PRICE
-	RET
+		MOV R0, PESO
+		MOV R1, [R0]
+		CALL STORE_WEIGHT
+		CALL STORE_FINAL_PRICE
+		RET
 
 STORE_WEIGHT:
-	MOV R8, 5002H			; Where will be stored the purchased products's weight
-	MOV [R8], R1			; Store the weight
-	RET
+		MOV R8, 5002H			; Where will be stored the purchased products's weight
+		MOV [R8], R1			; Store the weight
+		RET
 
 STORE_FINAL_PRICE:
-	CALL FIND_SPECIFIC_PRICE
+		CALL FIND_SPECIFIC_PRICE
 					; R1 holds the weight
-	MOV R2, R1			; R2 has a copy of the weight
-	MOV R8, 10			; 10, to divide
-	DIV R1, R8			; R1 holds the whole part of the division
-	MOD R2, R8			; R2 holds the decimal part of the division
-	MOV R7, [R11]			; R7 now holds the price of the current product
-	MUL R1, R7			; R1 gets multiplied by the price of the product
-	MUL R2, R7			; R2 gets multiplied by the price of the product
-	CMP R1, 0
-	JLT OVERFLOW_MESSAGE
-	CMP R2, 0
-	JLT OVERFLOW_MESSAGE
+		MOV R2, R1			; R2 has a copy of the weight
+		MOV R8, 10			; 10, to divide
+		DIV R1, R8			; R1 holds the whole part of the division
+		MOD R2, R8			; R2 holds the decimal part of the division
+		MOV R7, [R11]			; R7 now holds the price of the current product
+		MUL R1, R7			; R1 gets multiplied by the price of the product
+		MUL R2, R7			; R2 gets multiplied by the price of the product
+		CMP R1, 0
+		JLT OVERFLOW_MESSAGE
+		CMP R2, 0
+		JLT OVERFLOW_MESSAGE
 
-	MOV R3, R2			; R3 holds copy of R2 which will be used for rounding
-	MOV R9, 5			; Rounding threshold 
-	CALL ROUND_UNIT			; Round up if needed
-	ADD R1, R2			; Sum R1 and R2
-	JV OVERFLOW_MESSAGE		; If overflow is detected, display a warning
-	MOV R8, 5004H			; R8 now holds the adress where the price will be stored
-	MOV [R8], R1			; Stores the price
-	RET
+		MOV R3, R2			; R3 holds copy of R2 which will be used for rounding
+		MOV R9, 5			; Rounding threshold 
+		CALL ROUND_UNIT			; Round up if needed
+		ADD R1, R2			; Sum R1 and R2
+		JV OVERFLOW_MESSAGE		; If overflow is detected, display a warning
+		MOV R8, 5004H			; R8 now holds the adress where the price will be stored
+		MOV [R8], R1			; Stores the price
+		RET
 OVERFLOW_MESSAGE:
-	MOV R2, OVERFLOW_ERROR 		; Load overflow warning message
-	CALL SHOW_DISPLAY		; Show it on the display
-	CALL CLEAR_PERIPHERICS		; Clear all peripherics
-	MOV R0, OK			; Prepare to read OK
+		MOV R2, OVERFLOW_ERROR 		; Load overflow warning message
+		CALL SHOW_DISPLAY		; Show it on the display
+		CALL CLEAR_PERIPHERICS		; Clear all peripherics
+		MOV R0, OK			; Prepare to read OK
 OVERFLOW:
-	MOVB R1, [R0]			; Read OK
-	CMP R1, 1			; Check if OK is on
-	JNE OVERFLOW			; If it's not on, check again
-	CALL CLEAR_PERIPHERICS
+		MOVB R1, [R0]			; Read OK
+		CMP R1, 1			; Check if OK is on
+		JNE OVERFLOW			; If it's not on, check again
+		CALL CLEAR_PERIPHERICS
 RESTORE_PRODUCT_CODE:			; If it's on, prepare to take the user back
-	MOV R8, 5000H			; Place in memory where the PRODUCT_CODE was temporarily stored
-	MOV R0, PRODUCT_CODE		; PRODUCT_CODE peripheric
-	MOV R1, [R8]			; Read the product code of the last item weighted
-	MOV [R0], R1			; Write it down on the PRODUCT_CODE peripheric so it loads back the correct display
-	JMP WEIGHT_SCALE_MAIN		; Go back to the weighing scale menu (option 1)
+		MOV R8, 5000H			; Place in memory where the PRODUCT_CODE was temporarily stored
+		MOV R0, PRODUCT_CODE		; PRODUCT_CODE peripheric
+		MOV R1, [R8]			; Read the product code of the last item weighted
+		MOV [R0], R1			; Write it down on the PRODUCT_CODE peripheric so it loads back the correct display
+		JMP WEIGHT_SCALE_MAIN		; Go back to the weighing scale menu (option 1)
 STORE_PRODUCT_CODE:
-	MOV R8, 5000H			; Where will be stored the purchased product's PRODUCT_CODE
-	MOV R9, [R0]			; Temporarly hold the PRODUCT_CODE
-	MOV [R8], R9			; Store the PRODUCT_CODE
-	RET
+		MOV R8, 5000H			; Where will be stored the purchased product's PRODUCT_CODE
+		MOV R9, [R0]			; Temporarly hold the PRODUCT_CODE
+		MOV [R8], R9			; Store the PRODUCT_CODE
+		RET
 
 ; =======================================
 ; === Save and delete stored purchases===
@@ -931,46 +964,42 @@ MAKE_IT_ZERO:
 ; === Deleting of registrations routine ===
 ; =========================================
 CONFIRM_TO_DELETE:
-        MOV R2, ASK_TO_DELETE        ; Load the menu that will ask the user if he truly wants to delete all his registrations
-        CALL SHOW_DISPLAY        ; Display the menu
-        CALL CLEAR_PERIPHERICS
-        MOV R0, OK
-        MOV R1, CANCEL
-        CALL TO_DELETE
-        RET
+        	MOV R2, ASK_TO_DELETE		; Load the menu that will ask the user if he truly wants to delete all his registrations
+	        CALL SHOW_DISPLAY		; Display the menu
+       		CALL CLEAR_PERIPHERICS
+	        MOV R0, OK
+	        MOV R1, CANCEL
+	        CALL TO_DELETE
+	        RET
 
 TO_DELETE:
-        
-        MOVB R11, [R0]
-        CMP R11, 1
-        JEQ DELETING
-        MOVB R11, [R1]
-        CMP R11, 1
-        JEQ CANCEL_DELETE
-        JMP TO_DELETE
+	        MOVB R11, [R0]
+        	CMP R11, 1
+   	     	JEQ DELETING
+   		MOVB R11, [R1]
+        	CMP R11, 1
+        	JEQ CANCEL_DELETE
+        	JMP TO_DELETE
 
 DELETING:
-        MOV R2, CONFIRM_DELETED
-        CALL SHOW_DISPLAY
-        CALL CLEAR_HISTORY
-        CALL ALL_REG_DELETED
-        RET
+        	MOV R2, CONFIRM_DELETED
+        	CALL SHOW_DISPLAY
+        	CALL CLEAR_HISTORY
+        	CALL ALL_REG_DELETED
+        	RET
 
 CANCEL_DELETE:
-        CALL CLEAR_PERIPHERICS        ; Clear peripherics
-        RET                ; Return
-
+        	CALL CLEAR_PERIPHERICS		; Clear peripherics
+        	RET				;Return
 ALL_REG_DELETED:
-        CALL CLEAR_PERIPHERICS
-        CALL REG_DELETED
-        RET
-
+        	CALL CLEAR_PERIPHERICS
+        	CALL REG_DELETED
+        	RET
 REG_DELETED:
-        MOV R1, OK
-        MOVB R11, [R1]
-        CMP R11, 1
-        JEQ RETURNING
-        JMP REG_DELETED
-
+        	MOV R1, OK
+        	MOVB R11, [R1]
+        	CMP R11, 1
+        	JEQ RETURNING
+        	JMP REG_DELETED
 RETURNING:
-	RET
+		RET
