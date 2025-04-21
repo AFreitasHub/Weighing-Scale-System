@@ -831,10 +831,10 @@ PROCESS_END:
 ; === Store in memory temporary ===
 ; =================================
 STORE_WEIGHT_AND_PRICE:
-		MOV R0, PESO
-		MOV R1, [R0]
-		CALL STORE_WEIGHT
-		CALL STORE_FINAL_PRICE
+		MOV R0, PESO			; R0 has the adress of PESO
+		MOV R1, [R0]			; R1 has a copy of the weight
+		CALL STORE_WEIGHT		; Stores the weight in the memory
+		CALL STORE_FINAL_PRICE		; Stores the final price in the memory
 		RET
 
 STORE_WEIGHT:
@@ -941,10 +941,10 @@ SAVING_ON_MEMORY:
 		JMP CHECK_IF_TO_SAVE_ON_MEMORY 	; Checks to see if there are any more iterations left
 
 PURCHASED_CONFIRMED:
-		MOV R0, 4FF0H
-		MOV R1, [R0]
-		ADD R1, 1
-		MOV [R0], R1
+		MOV R0, 4FF0H			; R0 has the adress where the number of confirmed orders is being stored
+		MOV R1, [R0]			; R1 has a copy of the ammount of times a purchase has been confirmed
+		ADD R1, 1			; +1 purchase
+		MOV [R0], R1			; Store the updated ammount of confirmed purchases in the memory
 		RET
 
 CLEAR_HISTORY:
@@ -954,36 +954,36 @@ CLEAR_HISTORY:
 		MOV [R0], R2			; Now the number of purchases made is 0
 
 		MOV R3, R1			; R3 holds the ammount of times a purchase has been made previously from being set to 0
-		MOV R0, 5000H			
+		MOV R0, 5000H			; R0 has a copy of the adress where the stored information from purchases is stored
 		MOV R4, 6H			; 6
 		MOV R5, 2H			; 2
 		CALL ADRESS_FIRST_PRICE		; Now R0 holds the adress of the price of the first ever purchase
-		MOV R6, 5000H
+		MOV R6, 5000H			; R6 has a copy of the adress where the stored information from purchases is stored
 		MOV R7, 0H			; 0
 		CALL SET_IT_TO_ZERO		; Will make every single adress from 5000H till the last adress that was filled to 0
 		RET
 		
 ADRESS_FIRST_PRICE:
-		CMP R3, 0
-		JGT ADRESS_PRICE_LOOP
-		ADD R0, R5			
-		ADD R0, R5			; R0 was the adress of the first purchase PRODUCT_CODE but now its the price
+		CMP R3, 0			; Checks if it is already on the PRODUCT_CODE of the first purchase made
+		JGT ADRESS_PRICE_LOOP		; If it is not, move 6 (the length of each purchase content) to the right (to the next purchase)
+		ADD R0, R5			; +2, R0 had the adress of the first purchase PRODUCT_CODE but has its weight
+		ADD R0, R5			; +2, R0 had the adress of the first purchase weight but now has it's price
 		RET
 
 ADRESS_PRICE_LOOP:
-		ADD R0, R4
+		ADD R0, R4			; R0 + 6 so that it will go to the next confirmed purchase
 		SUB R3, 1			; R3 = R3 - 1
 		JMP ADRESS_FIRST_PRICE
 
 
 SET_IT_TO_ZERO:
-		CMP R0, R6
-		JGE MAKE_IT_ZERO
+		CMP R0, R6			; Until R0 is not equal to 5000H (the adress that represents the start when it comes to store information), it will make the current adress value to 0 and go back
+		JGE MAKE_IT_ZERO		; If R0 is not 5000H it will set to 0 the value of the current adress
 		RET
 
 MAKE_IT_ZERO:
-		MOV [R0], R7
-		SUB R0, R5
+		MOV [R0], R7			; Sets the content of the current adress to 0
+		SUB R0, R5			; R0 - 2 so that it will set to 0 all 3 parts of each purchase saved (including the temporary part)
 		JMP SET_IT_TO_ZERO
 
 ; =========================================
@@ -992,40 +992,40 @@ MAKE_IT_ZERO:
 CONFIRM_TO_DELETE:
         	MOV R2, ASK_TO_DELETE		; Load the menu that will ask the user if he truly wants to delete all his registrations
 	        CALL SHOW_DISPLAY		; Display the menu
-       		CALL CLEAR_PERIPHERICS
-	        MOV R0, OK
-	        MOV R1, CANCEL
-	        CALL TO_DELETE
+       		CALL CLEAR_PERIPHERICS		; Clear all peripherics
+	        MOV R0, OK			; R0 has the adress of OK
+	        MOV R1, CANCEL			; R1 has the adress of CANCEL
+	        CALL TO_DELETE			; Will check the users input to determine the following action
 	        RET
 
 TO_DELETE:
-	        MOVB R11, [R0]
-        	CMP R11, 1
-   	     	JEQ DELETING
-   		MOVB R11, [R1]
-        	CMP R11, 1
-        	JEQ CANCEL_DELETE
-        	JMP TO_DELETE
+	        MOVB R11, [R0]			; R11 has the value of OK
+        	CMP R11, 1			; Checks if OK was pressed
+   	     	JEQ DELETING			; If OK was pressed it will delete all saved information on the memory
+   		MOVB R11, [R1]			; R11 has the value of CANCEL
+        	CMP R11, 1			; Checks if CANCEL was pressed
+        	JEQ CANCEL_DELETE		; If CANCEL was pressed it will go back to the main menu and there will be no erasing of any information
+        	JMP TO_DELETE			; The cycle repeats until the user chooses one
 
 DELETING:
-        	MOV R2, CONFIRM_DELETED
-        	CALL SHOW_DISPLAY
-        	CALL CLEAR_HISTORY
-        	CALL ALL_REG_DELETED
+        	MOV R2, CONFIRM_DELETED		; Load the menu that will inform the user that all registrations have been deleted
+        	CALL SHOW_DISPLAY		; Display the menu
+        	CALL CLEAR_HISTORY		; Will put all the adresses value to 0 (the adresses responsible for storing the information saved)
+        	CALL ALL_REG_DELETED		; Function that will interact with the user to return to the main menu
         	RET
 
 CANCEL_DELETE:
         	CALL CLEAR_PERIPHERICS		; Clear peripherics
         	RET				;Return
 ALL_REG_DELETED:
-        	CALL CLEAR_PERIPHERICS
-        	CALL REG_DELETED
+        	CALL CLEAR_PERIPHERICS		; Clear peripherics
+        	CALL REG_DELETED		; Function that will interact with the user to return to the main menu
         	RET
 REG_DELETED:
-        	MOV R1, OK
-        	MOVB R11, [R1]
-        	CMP R11, 1
-        	JEQ RETURNING
-        	JMP REG_DELETED
+        	MOV R1, OK			; R1 has the adress of OK
+        	MOVB R11, [R1]			; R11 has the value of OK
+        	CMP R11, 1			; Checks if OK was pressed
+        	JEQ RETURNING			; If OK was pressed it will return to the main menu
+        	JMP REG_DELETED			; This cycle repeats until the user presses the OK button
 RETURNING:
 		RET
