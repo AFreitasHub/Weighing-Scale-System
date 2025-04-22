@@ -104,6 +104,24 @@ PRODUCTS:
 ; =============
 ; === Menus ===
 ; =============
+Place 1F00H
+EMPTY_HISTORY:
+		String "    ATENÇÃO!    "
+		String "----------------"
+		String " NENHUMA COMPRA "
+		String "    EFETUADA    "
+		String "                "
+		String "  PRESSIONE OK  "
+		String " PARA CONTINUAR "
+Place 1F80H
+OVERFLOW_ERROR:
+		String " ERRO: OVERFLOW "
+		String "----------------"
+		String " PESO DEMASIADO "
+		String "    ELEVADO!    "
+		String "                "
+		String "  PRESSIONE OK  "
+		String " PARA CONTINUAR "
 Place 2000H
 MAIN_MENU:				
 		String " MENU PRINCIPAL "
@@ -147,9 +165,9 @@ WEIGHT_SCALE_MENU_EMPTY:
 		String "    ATENÇÃO!    "
 		String "----------------"
 		String " NENHUM PRODUTO "
-		String "  SELECIONADO;  "
-		String "INSIRA UM CODIGO"
-		String " OU USE 'CHANGE'"
+		String "  SELECIONADO   "
+		String "INSIRA UM CÓDIGO"
+		String "  OU USE CHANGE "
 		String "PARA SELECIONAR!"
 Place 2280H
 SELECT_FRUIT_MENU: 
@@ -181,15 +199,7 @@ CONFIRM_DELETED:
         	String " PRIMA OK PARA  "
         	String " VOLTAR AO MENU "
 
-Place 1F80H
-OVERFLOW_ERROR:
-		String " ERRO: OVERFLOW "
-		String "----------------"
-		String " PESO DEMASIADO "
-		String "    ELEVADO!    "
-		String "                "
-		String "  PRESSIONE OK  "
-		String " PARA CONTINUAR "
+
 
 ; ====================
 ; === Main Program ===
@@ -202,7 +212,7 @@ Place 3000H
 BEGINNING:				
 		MOV SP, STACK_POINTER		; Initialize stack
 		CALL CLEAR_DISPLAY		; Clear the screen
-		CALL CLEAR_PERIPHERICS		; Clear the inputs
+		CALL CLEAR_PERIPHERICS		; Clear the inputs 
 		MOV R0, ON_OFF			; Prepare to read ON/OFF button
 TURN_ON:				
 		MOVB R1, [R0]			; Read ON/OFF button
@@ -342,7 +352,14 @@ WEIGHT_HISTORY:
 		CALL CLEAR_PERIPHERICS		; Clear the peripherics
 		MOV R0, 4FF0H			; Prepare to read how many entries exist in memory
 		MOV R1, [R0]			; Read how many entries exist in memory
-	
+		CMP R1, 0			; Check if there are any registers
+		JGT CYCLE_START			; If there are any registers, continue normally
+WARNING_EMPTY:
+		MOV R2, EMPTY_HISTORY
+		CALL SHOW_DISPLAY
+		CALL CONFIRM		
+		RET
+CYCLE_START:
 		MOV R0, 5006H			; First product code
 WEIGHT_HISTORY_CYCLE:
 		PUSH R1
