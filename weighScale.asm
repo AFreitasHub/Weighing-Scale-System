@@ -27,6 +27,7 @@ PURCHASES_SAVED		EQU	4FF0H	; Number of purchases saved in memory address
 SAVE_POINTER		EQU	4FF2H	; Where the next free adress to use to store permanently will be used
 TEMP_MEMORY		EQU 	5000H 	; Where the data of the purchase should be saved temporarily
 PERM_MEMORY_START	EQU	5006H	; Where the data of the purchases should be stored permanently
+TABLE_END		EQU	41E0H	; Last product code of the products table
 
 PLACE 4000H
 PRODUCTS:
@@ -510,40 +511,40 @@ SELECT_5:
 		MOV R1, R6			; Load the 5th product code to R1
 		JMP END
 CHANGE_PRODUCTS:
-		MOV R1, 0			 
-		MOV [R0], R1			
-		MOV R0, 214H     		
-		MOV R2, 41E0H			
-		CMP R11, R2
-		JGE WRAP_AROUND
-		JMP FETCH_PRODUCTS
+		MOV R1, 0			
+		MOV [R0], R1			; Clear the CHANGE peripheral
+		MOV R0, 214H     		; Set the position to start displaying
+		MOV R2, TABLE_END		; Last product code of the table
+		CMP R11, R2			; Check if we've reached the last item
+		JGE WRAP_AROUND			; If so, go back to the beginning
+		JMP FETCH_PRODUCTS		; If not, continue normally
 WRAP_AROUND:
-		JMP SHOW_PRODUCTS_START
+		JMP SHOW_PRODUCTS_START		; Start all over
 END:
-		MOV R0, PRODUCT_CODE
-		MOV R2, [R1]
-		MOV [R0], R2
-		RET
+		MOV R0, PRODUCT_CODE		; Prepare to write in PRODUCT_CODE
+		MOV R2, [R1]			; Load the selected product code to R2
+		MOV [R0], R2			; Write the selected product code in the peripheral
+		RET				; Return
 CANCEL_CHANGE:
-		JMP WEIGHT_SCALE_MAIN
+		JMP WEIGHT_SCALE_MAIN		; If cancel is pressed, jump back to the weighing scale cycle
 
 ; ======================
 ; === Display Helper ===
 ; ======================
 DISPLAY_PRODUCTS:
-		PUSH R10
+		PUSH R10			; Keep the initial position of the string for later use
 		MOV R9, 0			; Character index
 DISP_LOOP:
 		MOVB R2, [R10]			; Load character
 		MOVB [R0], R2			; Write to display
-		ADD R10, 1
-		ADD R0, 1
-		ADD R9, 1
-		CMP R9, R7
-		JLT DISP_LOOP
+		ADD R10, 1			; Shit to the next character
+		ADD R0, 1			; Shift to the next display position
+		ADD R9, 1			; Increment the character counter
+		CMP R9, R7			; Check if we've written all the characters
+		JLT DISP_LOOP			; If not, keep writing
 		ADD R0, 4			; Next display position
-		POP R10
-		RET
+		POP R10				; Load the initial position of the string, from the stack
+		RET				; Return
 
 ; =========================
 ; === Find Product Code ===
@@ -625,28 +626,27 @@ FIND_PRICE_PREPARE:
 		MOV R10, [R0]			; Read the product code in R0
         	MOV R9, 20            		; Size of an entry (20 bytes)
         	MOV R8, 18            		; How far the price is from the product code (18 bytes apart)
-        	JMP FIND_PRICE_LOOP        	; 
 FIND_PRICE_LOOP:
-        	MOV R7, [R11]            	;
-        	CMP R7, R10            		;
-        	JEQ FOUND_PRICE            	;
-        	ADD R11, R9            		;
-        	JMP FIND_PRICE_LOOP        	;
+        	MOV R7, [R11]            	; Read the current product code
+        	CMP R7, R10            		; Compare it to the one we're looking for
+        	JEQ FOUND_PRICE            	; If it's the same, then we found the right item
+        	ADD R11, R9            		; If not, shift to the next product code
+        	JMP FIND_PRICE_LOOP        	; And repeat the cycle
 
 FOUND_PRICE:
 		ADD R11, R8            		; Adds 18 so that now its the price of the product and not the ID
 		RET
 DISPLAY_PRICE_START: 
-		MOV R0, R11
-		MOV R7, 64H			; 100
-		MOV R8, 01H			; 1
-		CALL CONVERT_FOR_DISPLAY
+		MOV R0, R11			; Copy the price address to R0 (it'll be read in CONVERT_FOR_DISPLAY)
+		MOV R7, 64H			; 100, used for conversion from cents to euros
+		MOV R8, 01H			; 1, skip rounding
+		CALL CONVERT_FOR_DISPLAY	; Read the price and convert it to euros
 DISPLAY_PRICE:
-		MOV R6, 259H			;
-		MOV R0, 2			;
-		MOV R10, 2			;
-		CALL DISPLAY_NUMBER		;
-        	RET		        	;
+		MOV R6, 259H			; Display address
+		MOV R0, 2			; Number of digits the whole part should have
+		MOV R10, 2			; Number of digits the decimal part should have
+		CALL DISPLAY_NUMBER		; Display the number
+        	RET		        	; Return
 
 ; ===========================
 ; === Display Total Price ===
@@ -662,7 +662,7 @@ DISPLAY_TOTAL_PRICE:
 		MOV R0, 3			; Number of digits the whole part should have
 		MOV R10, 2			; Number of digits the decimal part should have
 		CALL DISPLAY_NUMBER		; Display the number
-		RET
+		RET				; Return
 
 ; ======================================
 ; === Sub-Routine To Read User Input === 
