@@ -223,10 +223,10 @@ ON:
 		CALL SHOW_DISPLAY		; Display the main menu
 		CALL CLEAR_PERIPHERICS		; Clear peripherics
 READ_INPUT:
-		MOV R0, ON_OFF
-		MOVB R1, [R0]
-		CMP R1, 0
-		JEQ BEGINNING
+		MOV R0, ON_OFF			; Prepare to read ON/OFF button
+		MOVB R1, [R0]			; Read ON/OFF button
+		CMP R1, 0			; Check if it's off
+		JEQ BEGINNING			; If so, turn off the weighing scale
 		MOV R0, SEL_NR_MENU		; Prepare to read user input
 		MOVB R1, [R0]			; Read the user input
 		CMP R1, 0			; Check if there's no user input
@@ -246,25 +246,25 @@ MODE_SELECTION:
 ; ========================================
 OPTION_WEIGHT_SCALE:
 		MOV R0, PRODUCT_CODE		; Prepare to read PRODUCT_CODE input
-		MOV R10, MIN_PRODUCT_CODE
-		MOV R11, MAX_PRODUCT_CODE
+		MOV R10, MIN_PRODUCT_CODE	; Load the minimum PRODUCT_CODE (100)
+		MOV R11, MAX_PRODUCT_CODE	; Load the maximum PRODUCT_CODE (124)
 		MOV R1, [R0]			; Read PRODUCT_CODE input
-		CALL WEIGHT_SCALE_MAIN		; Check if any PRODUCT_CODE was given
-		JMP ON
+		CALL WEIGHT_SCALE_MAIN		; Go to the main cycle
+		JMP ON				; Go back to the main menu
 
 ; ===================================
 ; === Weighing History (Option 2) ===
 ; ===================================
 OPTION_MENU_HISTORY:
-		CALL WEIGHT_HISTORY
-		JMP ON
+		CALL WEIGHT_HISTORY		; Go to the main cycle
+		JMP ON				; Go back to the main menu
 
 ; ========================
 ; === Reset (Option 3) ===
 ; ========================
 OPTION_RESET:
-        	CALL CONFIRM_TO_DELETE
-        	JMP ON
+        	CALL CONFIRM_TO_DELETE		; Go to the main cycle
+        	JMP ON				; Go back to the main menu
 
 ; ================================================
 ; === Weighing Scale (Option 1) - SUB-ROUTINES ===
@@ -303,18 +303,18 @@ WEIGHT_SCALE_CYCLE:
 
 		CMP R1, R7			; Check if the PESO In the peripheric is the same as the last known PESO
 		JEQ SKIP_DISPLAY_UPDATE		; If it's the same, do nothing
-		CALL DISPLAY_TOTAL_PRICE_START	;
+		CALL DISPLAY_TOTAL_PRICE_START	; Calculate and display the total price
 		CALL DISPLAY_WEIGHT_START	; If not the same, display the new PESO value
-		CALL STORE_WEIGHT_AND_PRICE
+		CALL STORE_WEIGHT_AND_PRICE	;  
 		MOV R7, [R0]			; Update the last known PESO
 
 			
 SKIP_DISPLAY_UPDATE:
 		MOV R0, PRODUCT_CODE		; Prepare to read PRODUCT_CODE
-		MOV R11, [R0]
-		MOV R10, 0
-		CMP R11, R10
-		JEQ CHECK_TO_SAVE
+		MOV R11, [R0]			; Read the PRODUCT_CODE
+		 
+		CMP R11, 0			; 
+		JEQ CHECK_TO_SAVE		; 
 		MOV R10, MIN_PRODUCT_CODE	; Load the minimum valid code (100)
 		MOV R11, MAX_PRODUCT_CODE	; Load the maximum valid code (124)
 		MOV R3, [R0]			; Read the value in PRODUCT_CODE
@@ -372,7 +372,7 @@ WEIGHT_HISTORY_CYCLE:
 		MOV R6, 23AH			; Where the weight should be displayed
 		MOV R7, 0AH			; 10, used for conversion (10cg is 1kg) 
 		MOV R8, 01H			; 1, will be used to skip rounding (there's no need to round up in this case)
-		PUSH R0
+		PUSH R0				;
 		CALL CONVERT_WEIGHT		; Convert and display the weight
 		POP R0
 		ADD R0, 2			; Prepare to read the price
@@ -1013,7 +1013,7 @@ CONFIRM_TO_DELETE:
 	        MOV R0, OK			; R0 has the adress of OK
 	        MOV R1, CANCEL			; R1 has the adress of CANCEL
 	        CALL TO_DELETE			; Will check the users input to determine the following action
-	        RET
+	        RET				; Return
 
 TO_DELETE:
 	        MOVB R11, [R0]			; R11 has the value of OK
@@ -1033,11 +1033,11 @@ DELETING:
 
 CANCEL_DELETE:
         	CALL CLEAR_PERIPHERICS		; Clear peripherics
-        	RET				;Return
+        	RET				; Return
 ALL_REG_DELETED:
         	CALL CLEAR_PERIPHERICS		; Clear peripherics
         	CALL REG_DELETED		; Function that will interact with the user to return to the main menu
-        	RET
+        	RET				; Return
 REG_DELETED:
         	MOV R1, OK			; R1 has the adress of OK
         	MOVB R11, [R1]			; R11 has the value of OK
@@ -1045,4 +1045,4 @@ REG_DELETED:
         	JEQ RETURNING			; If OK was pressed it will return to the main menu
         	JMP REG_DELETED			; This cycle repeats until the user presses the OK button
 RETURNING:
-		RET
+		RET				; Return
