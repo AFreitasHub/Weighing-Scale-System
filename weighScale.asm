@@ -422,7 +422,7 @@ FILL_WEIGHT_SCALE:
 		CALL DISPLAY_WEIGHT_START	; Display the weight (starts at zero because no product has been weighed yet)
 		CALL FIND_PRICE			; Look for the price of the current item within the memory
 		CALL DISPLAY_PRICE_START	; Display the price of the item
-		
+		CALL DISPLAY_TOTAL_PRICE_START	; Calculate and display the total price
 		CALL CLEAR_PERIPHERICS		; Clear peripherics
 		RET				; Return
 
@@ -621,7 +621,7 @@ FIND_SPECIFIC_PRICE:
 
 FIND_PRICE:
 		MOV R0, PRODUCT_CODE		;
-        	MOV R11, PURCHASES_SAVED       	;
+        	MOV R11, PRODUCTS		;
 		MOV R10, [R0]			;
         	MOV R9, 20            		;
         	MOV R8, 18            		;
