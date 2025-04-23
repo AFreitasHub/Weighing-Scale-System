@@ -215,7 +215,7 @@ Place 3000H
 BEGINNING:				
 		MOV SP, STACK_POINTER		; Initialize stack
 		CALL CLEAR_DISPLAY		; Clear the screen
-		CALL CLEAR_PERIPHERICS		; Clear the inputs 
+		CALL CLEAR_PERIPHERALS		; Clear the inputs 
 		MOV R0, ON_OFF			; Prepare to read ON/OFF button
 TURN_ON:				
 		MOVB R1, [R0]			; Read ON/OFF button
@@ -224,7 +224,7 @@ TURN_ON:
 ON:
 		MOV R2, MAIN_MENU		; Load the main menu into R2
 		CALL SHOW_DISPLAY		; Display the main menu
-		CALL CLEAR_PERIPHERICS		; Clear peripherics
+		CALL CLEAR_PERIPHERALS		; Clear peripherals
 READ_INPUT:
 		MOV R0, ON_OFF			; Prepare to read ON/OFF button
 		MOVB R1, [R0]			; Read ON/OFF button
@@ -285,7 +285,7 @@ WEIGHT_SCALE_MAIN:
 WEIGHT_SCALE_EMPTY:
 		MOV R2, WEIGHT_SCALE_MENU_EMPTY	; Load the warning message
 		CALL SHOW_DISPLAY		; Show in the display
-		CALL CLEAR_PERIPHERICS		; Clear the peripherics
+		CALL CLEAR_PERIPHERALS		; Clear the peripherals
 		JMP WEIGHT_SCALE_CYCLE		; Start the menu's cycle
 WEIGHT_SCALE:
 		MOV R2, WEIGHT_SCALE_MENU	; Load the normal menu 
@@ -301,10 +301,10 @@ WEIGHT_SCALE_CYCLE:
 		MOVB R1, [R0]			; Read CHANGE
 		CMP R1, 1			; Check if it's on
 		JEQ CHANGE_MENU			; If so, go to the corresponding sub-routine
-		MOV R0, PESO			; If not, prepare to read the PESO on the peripheric
+		MOV R0, PESO			; If not, prepare to read the PESO on the peripheral
 		MOV R1, [R0]			; Read PESO
 
-		CMP R1, R7			; Check if the PESO In the peripheric is the same as the last known PESO
+		CMP R1, R7			; Check if the PESO In the peripheral is the same as the last known PESO
 		JEQ SKIP_DISPLAY_UPDATE		; If it's the same, do nothing
 		CALL DISPLAY_TOTAL_PRICE_START	; Calculate and display the total price
 		CALL DISPLAY_WEIGHT_START	; If not the same, display the new PESO value
@@ -352,7 +352,7 @@ SAVE_IT:
 WEIGHT_HISTORY:
 		MOV R2, HISTORY_MENU		; Load the menu for weighing history
 		CALL SHOW_DISPLAY		; Display the menu
-		CALL CLEAR_PERIPHERICS		; Clear the peripherics
+		CALL CLEAR_PERIPHERALS		; Clear the peripherals
 		MOV R0, PURCHASES_SAVED		; Prepare to read how many entries exist in memory
 		MOV R1, [R0]			; Read how many entries exist in memory
 		CMP R1, 0			; Check if there are any registers
@@ -400,7 +400,7 @@ NEXT:
 		SUB R1, 1
 		CMP R1, 0
 		JEQ WRAP
-		CALL CLEAR_PERIPHERICS
+		CALL CLEAR_PERIPHERALS
 		ADD R0, 2
 		JMP WEIGHT_HISTORY_CYCLE
 WRAP: 
@@ -417,13 +417,13 @@ FILL_WEIGHT_SCALE:
 		CALL FIND_ID			; Look for the current PRODUCT_CODE within the memory
 		CALL DISPLAY_NAME		; Display the name of the corresponding item
 		MOV R0, PESO			; Prepare to read PESO
-		MOV R9, 0			; Load 0, will be used to clear the peripheric
-		MOV [R0], R9 			; Clear the PESO peripheric
+		MOV R9, 0			; Load 0, will be used to clear the peripheral
+		MOV [R0], R9 			; Clear the PESO peripheral
 		CALL DISPLAY_WEIGHT_START	; Display the weight (starts at zero because no product has been weighed yet)
 		CALL FIND_PRICE			; Look for the price of the current item within the memory
 		CALL DISPLAY_PRICE_START	; Display the price of the item
 		CALL DISPLAY_TOTAL_PRICE_START	; Calculate and display the total price
-		CALL CLEAR_PERIPHERICS		; Clear peripherics
+		CALL CLEAR_PERIPHERALS		; Clear peripherals
 		RET				; Return
 
 ; =====================================		
@@ -432,7 +432,7 @@ FILL_WEIGHT_SCALE:
 CHANGE_ITEM: 					
 		MOV R2, SELECT_FRUIT_MENU	
 		CALL SHOW_DISPLAY 		
-		CALL CLEAR_PERIPHERICS		
+		CALL CLEAR_PERIPHERALS		
 						
 ; ====================================		
 ; === Show and Choose the Products ===		
@@ -547,13 +547,13 @@ DISP_LOOP:
 ; =========================
 FIND_ID:
 		MOV R11, PRODUCTS		; 4000H is the start of the products table 
-		MOV R10, [R0]			; Read the PRODUCT_CODE peripheric
+		MOV R10, [R0]			; Read the PRODUCT_CODE peripheral
 		MOV R9, 20			; Each product entry is 20 bytes long
 		MOV R8, 2			; Load 2 since the name is always 2 bytes from the product code
 		JMP FIND_ID_LOOP		; Start the loop to find the corresponding item
 FIND_ID_LOOP:
 		MOV R7, [R11]			; Read the products table at the current position
-		CMP R7, R10			; Check if the read code is the same as the one in the peripherics
+		CMP R7, R10			; Check if the read code is the same as the one in the peripherals
 		JEQ FOUND_ID			; If so, stop searching
 		ADD R11, R9			; If not, check the next product
 		JMP FIND_ID_LOOP		; Repeat the loop until found
@@ -598,9 +598,9 @@ CHECK_WEIGHT_LIMIT:
 		JMP CONVERT_WEIGHT		; If not greater than maximum, convert it to kg		
 SET_ZERO:
 		MOV R1, 0			; If greater than maximum, set the weight to zero
-		MOV [R0], R1			; Write zero on the PESO peripheric
+		MOV [R0], R1			; Write zero on the PESO peripheral
 CONVERT_WEIGHT:
-		CALL CONVERT_FOR_DISPLAY	; Convert the value in PESO peripheric from cg to kg		
+		CALL CONVERT_FOR_DISPLAY	; Convert the value in PESO peripheral from cg to kg		
 DISPLAY_WEIGHT:                  		; R6 -> Start of the display
     		MOV R0, 2			; Amount of digits the whole part should have in the display
 		MOV R10, 1			; Amount of digits the decimal part should have in the display
@@ -682,7 +682,7 @@ SHOW_ERROR:
 		PUSH R2				;
 		MOV R2, ERROR_MENU		;
 		CALL SHOW_DISPLAY		;
-		CALL CLEAR_PERIPHERICS		;
+		CALL CLEAR_PERIPHERALS		;
 		MOV R0, OK			;
 ERROR:
 		MOVB R1, [R0]			;
@@ -717,7 +717,7 @@ SHOW_DISPLAY_CYCLE:
 ; ========================================	
 ; === Sub-Routine To Clear Peripherics ===			
 ; ========================================			
-CLEAR_PERIPHERICS:
+CLEAR_PERIPHERALS:
 		PUSH R0				;
 		PUSH R1				;
 		PUSH R2				;
@@ -890,18 +890,18 @@ STORE_FINAL_PRICE:
 OVERFLOW_MESSAGE:
 		MOV R2, OVERFLOW_ERROR 		; Load overflow warning message
 		CALL SHOW_DISPLAY		; Show it on the display
-		CALL CLEAR_PERIPHERICS		; Clear all peripherics
+		CALL CLEAR_PERIPHERALS		; Clear all peripherals
 		MOV R0, OK			; Prepare to read OK
 OVERFLOW:
 		MOVB R1, [R0]			; Read OK
 		CMP R1, 1			; Check if OK is on
 		JNE OVERFLOW			; If it's not on, check again
-		CALL CLEAR_PERIPHERICS		; Clear the peripherics
+		CALL CLEAR_PERIPHERALS		; Clear the peripherals
 RESTORE_PRODUCT_CODE:				; If it's on, prepare to take the user back
 		MOV R8, TEMP_MEMORY		; Place in memory where the PRODUCT_CODE was temporarily stored
-		MOV R0, PRODUCT_CODE		; PRODUCT_CODE peripheric
+		MOV R0, PRODUCT_CODE		; PRODUCT_CODE peripheral
 		MOV R1, [R8]			; Read the product code of the last item weighted
-		MOV [R0], R1			; Write it down on the PRODUCT_CODE peripheric so it loads back the correct display
+		MOV [R0], R1			; Write it down on the PRODUCT_CODE peripheral so it loads back the correct display
 		JMP WEIGHT_SCALE_MAIN		; Go back to the weighing scale menu (option 1)
 STORE_PRODUCT_CODE:
 		MOV R8, TEMP_MEMORY			; Where will be stored the purchased product's PRODUCT_CODE
@@ -1014,7 +1014,7 @@ MAKE_IT_ZERO:
 CONFIRM_TO_DELETE:
         	MOV R2, ASK_TO_DELETE		; Load the menu that will ask the user if he truly wants to delete all his registrations
 	        CALL SHOW_DISPLAY		; Display the menu
-       		CALL CLEAR_PERIPHERICS		; Clear all peripherics
+       		CALL CLEAR_PERIPHERALS		; Clear all peripherals
 	        MOV R0, OK			; R0 has the adress of OK
 	        MOV R1, CANCEL			; R1 has the adress of CANCEL
 	        CALL TO_DELETE			; Will check the users input to determine the following action
@@ -1037,10 +1037,10 @@ DELETING:
         	RET
 
 CANCEL_DELETE:
-        	CALL CLEAR_PERIPHERICS		; Clear peripherics
+        	CALL CLEAR_PERIPHERALS		; Clear peripherals
         	RET				; Return
 ALL_REG_DELETED:
-        	CALL CLEAR_PERIPHERICS		; Clear peripherics
+        	CALL CLEAR_PERIPHERALS		; Clear peripherals
         	CALL REG_DELETED		; Function that will interact with the user to return to the main menu
         	RET				; Return
 REG_DELETED:
