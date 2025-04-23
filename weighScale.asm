@@ -23,6 +23,7 @@ MAX_PRODUCT_CODE	EQU	7CH	; 124
 STRING_SIZE		EQU	10H	; 16
 STACK_POINTER 		EQU 	1000H	; Top of the stack address
 PURCHASES_SAVED		EQU	4FF0H	; Number of purchases saved in memory address
+SAVE_POINTER		EQU	4FF2H	; Where the next free adress to use to store permanently will be used
 TEMP_MEMORY		EQU 	5000H 	; Where the data of the purchase should be saved temporarily
 PERM_MEMORY_START	EQU	5006H	; Where the data of the purchases should be stored permanently
 
@@ -909,104 +910,49 @@ STORE_PRODUCT_CODE:
 		MOV [R8], R9			; Store the PRODUCT_CODE
 		RET
 
-; =======================================
-; === Save and delete stored purchases===
-; =======================================
-SAVE_ON_MEMORY:					; Utilizar uma posição de memória para guardar o valor do pointer (onde inserir o registo)
+; ===============================
+; === Save confirmed purchases===
+; ===============================
+SAVE_ON_MEMORY:
 		CALL PURCHASED_CONFIRMED
-		MOV R0, PURCHASES_SAVED		; R0 has the adress of the number of all purchases made;
-		MOV R1, [R0]			; R1 now has the number of times a purchase has been made
 		MOV R0, TEMP_MEMORY		; R0 has the adress of the PRODUCT_CODE of the product from the last purchase
-		MOV R2, 6H			; 6, the number of adresses reserved for each purchase, each purchase holds the adress of the PRODUCT_CODE of the product (2 bytes), the weight of the product (2 bytes) and the price of the purchase (2 bytes)
-		MOV R3, 2H			; 2
-		MOV R4, 1H			; 1
-		MOV R5, R1			; R5 now has the number of times a purchase has been made
-		SUB R5, R4			; R5 now will be able to count how many purchases have been made and are on memory
-		JMP GET_FIRST_PURCH_PC		; It will get the adress of the PRODUCT_CODE of the first ever purchase
-
-GET_FIRST_PURCH_PC:
-		CMP R5, 0			;
-		JEQ CHECK_IF_TO_SAVE_ON_MEMORY	; R0 now has the PRODUCT_CODE of the first ever purchase
-		JMP FIRST_NAME_LOOP		; R0 doesnt have the adress of the name of the first ever purchase's name
-
-FIRST_NAME_LOOP:
-		ADD R0, R2			; R0 now has the product of the purchase to the right
-		SUB R5, R4			; R5 now has -1
-		JMP GET_FIRST_PURCH_PC		; Checks if now R0 has the adress of the product code of the firsst ever purchase or not
-
-CHECK_IF_TO_SAVE_ON_MEMORY:
-		CMP R1, 0			; Checks if the number of purchases is positive to see if there needs to me moved or not
-		JGT SAVING_ON_MEMORY		; If there are still memories to move it will do so
-		RET				; Volta para o menu principal
+		MOV R1, SAVE_POINTER		; R1 has the adress of where the next free adress is stored
+		MOV R2, [R1]			; R2 has the adress of the next free adress
+		MOV R3, [R1]			; R3 has the adress of the next free adress, will be used to update the next free adress
+		MOV R4, 6H			; 6, since every purchase holds 6 bytes, the next free space will be in 6 bytes
+		ADD R3, R4			; Now has the next free adress (taking in account that the previous free adress will be used right now)
+		MOV [R1], R3			; Next free adress updated
+		MOV R3, 2H			; 2, will be useful since each purchase is divided in 3 parts, each with 2 byes (2 bytes for the product code, 2 bytes for the weight, 2 bytes for the price)
+		JMP SAVING_ON_MEMORY		; Will save the temporary memory in the permanent part
 
 SAVING_ON_MEMORY:
-		MOV R11, [R0]			; R11 has the PRODUCT_CODE of the purchase
-		ADD R0, R2			; R0 has the adress of the PRODUCT_CODE where the purchase's PRODUCT_CODE will be stored
-		MOV [R0], R11			; Now the PRODUCT_CODE of the purchase has been stored
-		SUB R0, R3			;
-		SUB R0, R3			; R0 has the adress of the weight of the purchase's product
-		MOV R11, [R0]			; R11 has the contents of the adress of the weight of the purchase
-		ADD R0, R2			; R0 has the adress of the weight where the purchase's weight will be stored
-		MOV [R0], R11			; Now the weight of the purchase has been stored
-		SUB R0, R3
-		SUB R0, R3			; R0 has the adress of the price of the purchase's product	
-		MOV R11, [R0]			; R11 has the contents of the adress of the price of the purchase
-		ADD R0, R2			; R0 has the adress of the price where the purchase's price will be stored
-		MOV [R0], R11			; Now the price of the purchase has been stored
-		SUB R0, R3			;
-		SUB R0, R3			;
-		SUB R0, R3			;
-		SUB R0, R3			;
-		SUB R0, R3			; R0 - 10 so that now R0 has the adress is started with
-		SUB R0, R2			; R0 now has the adress of the next iteration
-		SUB R1, R4			; -1 iteration to do
-		JMP CHECK_IF_TO_SAVE_ON_MEMORY 	; Checks to see if there are any more iterations left
+		MOV R1, [R0]			; R1 has the product code of the confirmed purchase
+		MOV [R2], R1			; The new confirmed purchase's product code has been stored!
+		ADD R0, R3			; R0 now has the adress where the purchase's weight is being stored
+		ADD R2, R3			; R2 now has the adress where the purchase's weight will be stored
+		MOV R1, [R0]			; R1 has the weight of the confirmed purchase
+		MOV [R2], R1			; The new confirmed purchase's weight has been stored!
+		ADD R0, R3			; R0 now has the adress where the purchase's price is being stored
+		ADD R2, R3			; R2 now has the adress where the purchase's price will be stored
+		MOV R1, [R0]			; R1 has the price of the confirmed purchase
+		MOV [R2], R1			; The new confirmed purchase's price has been stored!
+		RET
 
 PURCHASED_CONFIRMED:
 		MOV R0, PURCHASES_SAVED		; R0 has the adress where the number of confirmed orders is being stored
 		MOV R1, [R0]			; R1 has a copy of the ammount of times a purchase has been confirmed
 		ADD R1, 1			; +1 purchase
 		MOV [R0], R1			; Store the updated ammount of confirmed purchases in the memory
+		SUB R1, 1			; Subtracts 1 just to see if it is the first purchase, which if it is, it will have to reset the SAVE_POINTER
+		CMP R1, 0			; If it is the first ever confirmed purchase, it means the save pointer should be PERM_MEMORY_START, which is the start where all purchases will be saved
+		JEQ RESET_POINTER
 		RET
 
-CLEAR_HISTORY:
-		MOV R0, PURCHASES_SAVED		; R0 holds the adress where the number of purchases has been made
-		MOV R1, [R0]			; R1 holds the ammount of times a purchase has been made
-		MOV R2, 0H			; 0
-		MOV [R0], R2			; Now the number of purchases made is 0
-
-		MOV R3, R1			; R3 holds the ammount of times a purchase has been made previously from being set to 0
-		MOV R0, TEMP_MEMORY		; R0 has a copy of the adress where the stored information from purchases is stored
-		MOV R4, 6H			; 6
-		MOV R5, 2H			; 2
-		CALL ADRESS_FIRST_PRICE		; Now R0 holds the adress of the price of the first ever purchase
-		MOV R6, TEMP_MEMORY		; R6 has a copy of the adress where the stored information from purchases is stored
-		MOV R7, 0H			; 0
-		CALL SET_IT_TO_ZERO		; Will make every single adress from 5000H till the last adress that was filled to 0
+RESET_POINTER:
+		MOV R0, SAVE_POINTER		; R0 holds the adress of SAVE_POINTER
+		MOV R1, PERM_MEMORY_START	; R1 holds the adress of PERM_MEMORY_START
+		MOV [R0], R1			; Resets the save pointer by updating SAVE_POINTER's contents
 		RET
-		
-ADRESS_FIRST_PRICE:
-		CMP R3, 0			; Checks if it is already on the PRODUCT_CODE of the first purchase made
-		JGT ADRESS_PRICE_LOOP		; If it is not, move 6 (the length of each purchase content) to the right (to the next purchase)
-		ADD R0, R5			; +2, R0 had the adress of the first purchase PRODUCT_CODE but has its weight
-		ADD R0, R5			; +2, R0 had the adress of the first purchase weight but now has it's price
-		RET
-
-ADRESS_PRICE_LOOP:
-		ADD R0, R4			; R0 + 6 so that it will go to the next confirmed purchase
-		SUB R3, 1			; R3 = R3 - 1
-		JMP ADRESS_FIRST_PRICE
-
-
-SET_IT_TO_ZERO:
-		CMP R0, R6			; Until R0 is not equal to 5000H (the adress that represents the start when it comes to store information), it will make the current adress value to 0 and go back
-		JGE MAKE_IT_ZERO		; If R0 is not 5000H it will set to 0 the value of the current adress
-		RET
-
-MAKE_IT_ZERO:
-		MOV [R0], R7			; Sets the content of the current adress to 0
-		SUB R0, R5			; R0 - 2 so that it will set to 0 all 3 parts of each purchase saved (including the temporary part)
-		JMP SET_IT_TO_ZERO
 
 ; =========================================
 ; === Deleting of registrations routine ===
@@ -1035,6 +981,33 @@ DELETING:
         	CALL CLEAR_HISTORY		; Will put all the adresses value to 0 (the adresses responsible for storing the information saved)
         	CALL ALL_REG_DELETED		; Function that will interact with the user to return to the main menu
         	RET
+
+CLEAR_HISTORY:
+		MOV R0, PURCHASES_SAVED		; R0 holds the adress where the number of purchases has been made
+		MOV R1, 0H			; 0
+		MOV [R0], R1			; Now the number of purchases made is 0
+		MOV R0, PERM_MEMORY_START	; R0 holds the adress of SAVE_POINTER
+		MOV R1, SAVE_POINTER		; R1 holds the adress of PERM_MEMORY_START
+		MOV R2, [R1]			; R2 holds a copy of the previous memory adress that would be used to store the next purchase
+		MOV [R2], R0			; Resets the save pointer by updating SAVE_POINTER's contents
+		MOV R3, 2H			; 2
+		MOV R0, R2
+		SUB R0, R3			; Now R0 holds the price of the last purchased saved
+		MOV R6, TEMP_MEMORY		; R6 has a copy of the adress where the stored information from purchases is stored
+		MOV R7, 0H			; 0
+		CALL SET_IT_TO_ZERO		; Will make every single adress from 5000H till the last adress that was filled to 0
+		RET
+
+SET_IT_TO_ZERO:
+		CMP R0, R6			; Until R0 is not equal to 5000H (the adress that represents the start when it comes to store information), it will make the current adress value to 0 and go back
+		JGE MAKE_IT_ZERO		; If R0 is not 5000H it will set to 0 the value of the current adress
+		RET
+
+MAKE_IT_ZERO:
+		MOV [R0], R7			; Sets the content of the current adress to 0
+		SUB R0, R5			; R0 - 2 so that it will set to 0 all 3 parts of each purchase saved (including the temporary part)
+		JMP SET_IT_TO_ZERO
+
 
 CANCEL_DELETE:
         	CALL CLEAR_PERIPHERICS		; Clear peripherics
