@@ -22,6 +22,9 @@ MIN_PRODUCT_CODE	EQU	64H	; 100
 MAX_PRODUCT_CODE	EQU	7CH	; 124
 STRING_SIZE		EQU	10H	; 16
 STACK_POINTER 		EQU 	1000H	; Top of the stack address
+PURCHASES_SAVED		EQU	4FF0H	; Number of purchases saved in memory address
+TEMP_MEMORY		EQU 	5000H 	; Where the data of the purchase should be saved temporarily
+PERM_MEMORY_START	EQU	5006H	; Where the data of the purchases should be stored permanently
 
 PLACE 4000H
 PRODUCTS:
@@ -305,16 +308,16 @@ WEIGHT_SCALE_CYCLE:
 		JEQ SKIP_DISPLAY_UPDATE		; If it's the same, do nothing
 		CALL DISPLAY_TOTAL_PRICE_START	; Calculate and display the total price
 		CALL DISPLAY_WEIGHT_START	; If not the same, display the new PESO value
-		CALL STORE_WEIGHT_AND_PRICE	;  
+		CALL STORE_WEIGHT_AND_PRICE	; 
 		MOV R7, [R0]			; Update the last known PESO
 
 			
 SKIP_DISPLAY_UPDATE:
 		MOV R0, PRODUCT_CODE		; Prepare to read PRODUCT_CODE
 		MOV R11, [R0]			; Read the PRODUCT_CODE
-		 
-		CMP R11, 0			; 
-		JEQ CHECK_TO_SAVE		; 
+		MOV R10, 0			;  
+		CMP R11, R10			; Check if there was any PRODUCT_CODE inserted when the user selected "OK"
+		JEQ CHECK_TO_SAVE		; If there was no PRODUCT_CODE, it means the user intends to save the purchase;
 		MOV R10, MIN_PRODUCT_CODE	; Load the minimum valid code (100)
 		MOV R11, MAX_PRODUCT_CODE	; Load the maximum valid code (124)
 		MOV R3, [R0]			; Read the value in PRODUCT_CODE
@@ -350,7 +353,7 @@ WEIGHT_HISTORY:
 		MOV R2, HISTORY_MENU		; Load the menu for weighing history
 		CALL SHOW_DISPLAY		; Display the menu
 		CALL CLEAR_PERIPHERICS		; Clear the peripherics
-		MOV R0, 4FF0H			; Prepare to read how many entries exist in memory
+		MOV R0, PURCHASES_SAVED		; Prepare to read how many entries exist in memory
 		MOV R1, [R0]			; Read how many entries exist in memory
 		CMP R1, 0			; Check if there are any registers
 		JGT CYCLE_START			; If there are any registers, continue normally
@@ -360,7 +363,7 @@ WARNING_EMPTY:
 		CALL CONFIRM		
 		RET
 CYCLE_START:
-		MOV R0, 5006H			; First product code
+		MOV R0, PERM_MEMORY_START	; First product code
 WEIGHT_HISTORY_CYCLE:
 		PUSH R1
 		CALL FIND_ID			; Based on the product code in R0, find the name of the product
@@ -423,32 +426,32 @@ FILL_WEIGHT_SCALE:
 		CALL CLEAR_PERIPHERICS		; Clear peripherics
 		RET				; Return
 
-; =====================================
-; === Sub-routine to change product ===
-; =====================================
-CHANGE_ITEM: 
-		MOV R2, SELECT_FRUIT_MENU
-		CALL SHOW_DISPLAY 
-		CALL CLEAR_PERIPHERICS
-
-; ====================================
-; === Show and Choose the Products ===
-; ====================================
-SHOW_PRODUCTS_START:
-		MOV R11, 4000H; R11: Pointer to current PRODUCT_CODE
-		MOV R10, 4002H        ; R10: Pointer to current product NAME
-		MOV R8, 20            ; R8: Size of one product entry
-		MOV R7, 12            ; R7: Max characters in product name
-		MOV R0, 214H          ; R0: Initial display address
-		MOV R1, 0             ; Index counter
+; =====================================		
+; === Sub-routine to change product ===		
+; =====================================		
+CHANGE_ITEM: 					
+		MOV R2, SELECT_FRUIT_MENU	
+		CALL SHOW_DISPLAY 		
+		CALL CLEAR_PERIPHERICS		
+						
+; ====================================		
+; === Show and Choose the Products ===		
+; ====================================		
+SHOW_PRODUCTS_START:				
+		MOV R11, PRODUCTS		; R11: Pointer to current PRODUCT_CODE
+		MOV R10, 4002H        		; R10: Pointer to current product NAME
+		MOV R8, 20            		; R8: Size of one product entry
+		MOV R7, 12            		; R7: Max characters in product name
+		MOV R0, 214H          		; R0: Initial display address
+		MOV R1, 0             		; Index counter
 FETCH_PRODUCTS:
-		PUSH R11             ; Save product pointer (ID)
-		CALL DISPLAY_PRODUCTS
-		ADD R11, R8          ; Next product's code
-		ADD R10, R8          ; Next product's name
-		ADD R1, 1
-		CMP R1, 5
-		JLT FETCH_PRODUCTS
+		PUSH R11             		; Save product pointer (ID)
+		CALL DISPLAY_PRODUCTS		; 
+		ADD R11, R8          		; Next product's code
+		ADD R10, R8          		; Next product's name
+		ADD R1, 1			; 
+		CMP R1, 5			; 
+		JLT FETCH_PRODUCTS		; 
 		POP R6
 		POP R5
 		POP R4
@@ -543,7 +546,7 @@ DISP_LOOP:
 ; === Find Product Code ===
 ; =========================
 FIND_ID:
-		MOV R11, 4000H 			; 4000H is the start of the products table 
+		MOV R11, PRODUCTS		; 4000H is the start of the products table 
 		MOV R10, [R0]			; Read the PRODUCT_CODE peripheric
 		MOV R9, 20			; Each product entry is 20 bytes long
 		MOV R8, 2			; Load 2 since the name is always 2 bytes from the product code
@@ -609,17 +612,17 @@ DISPLAY_WEIGHT:                  		; R6 -> Start of the display
 ; ===================
 
 FIND_SPECIFIC_PRICE:
-		MOV R0, 5000H
-        	MOV R11, 4000H             	;
-		MOV R10, [R0]
+		MOV R0, TEMP_MEMORY		;
+        	MOV R11, PRODUCTS             	;
+		MOV R10, [R0]			;
         	MOV R9, 20            		;
         	MOV R8, 18            		;
         	JMP FIND_PRICE_LOOP        	;
 
 FIND_PRICE:
-		MOV R0, PRODUCT_CODE
-        	MOV R11, 4000H             	;
-		MOV R10, [R0]
+		MOV R0, PRODUCT_CODE		;
+        	MOV R11, PURCHASES_SAVED       	;
+		MOV R10, [R0]			;
         	MOV R9, 20            		;
         	MOV R8, 18            		;
         	JMP FIND_PRICE_LOOP        	;
@@ -639,10 +642,10 @@ DISPLAY_PRICE_START:
 		MOV R8, 01H			; 1
 		CALL CONVERT_FOR_DISPLAY
 DISPLAY_PRICE:
-		MOV R6, 259H
-		MOV R0, 2
-		MOV R10, 2
-		CALL DISPLAY_NUMBER
+		MOV R6, 259H			;
+		MOV R0, 2			;
+		MOV R10, 2			;
+		CALL DISPLAY_NUMBER		;
         	RET		        	;
 
 ; ===========================
@@ -665,11 +668,11 @@ DISPLAY_TOTAL_PRICE:
 ; === Sub-Routine To Read User Input === 
 ; ======================================
 CONFIRM:	
-		MOV R0, OK
-		MOVB R7, [R0]
-		CMP R7, 0
-		JEQ CONFIRM
-		RET
+		MOV R0, OK			; 
+		MOVB R7, [R0]			; 
+		CMP R7, 0			; 
+		JEQ CONFIRM			; 
+		RET				; Return
 ; ====================================
 ; === Sub-Routine To Display Error ===
 ; ====================================
@@ -855,13 +858,14 @@ STORE_WEIGHT_AND_PRICE:
 		RET
 
 STORE_WEIGHT:
-		MOV R8, 5002H			; Where will be stored the purchased products's weight
+		MOV R8, TEMP_MEMORY		; 5000H, where it will be stored the purchase
+		ADD R8, 2			; Add 2 to point where it'll be stored the purchased products's weight
 		MOV [R8], R1			; Store the weight
 		RET
 
 STORE_FINAL_PRICE:
-		CALL FIND_SPECIFIC_PRICE
-					; R1 holds the weight
+		CALL FIND_SPECIFIC_PRICE	; 
+						; R1 holds the weight
 		MOV R2, R1			; R2 has a copy of the weight
 		MOV R8, 10			; 10, to divide
 		DIV R1, R8			; R1 holds the whole part of the division
@@ -869,19 +873,20 @@ STORE_FINAL_PRICE:
 		MOV R7, [R11]			; R7 now holds the price of the current product
 		MUL R1, R7			; R1 gets multiplied by the price of the product
 		MUL R2, R7			; R2 gets multiplied by the price of the product
-		CMP R1, 0
-		JLT OVERFLOW_MESSAGE
-		CMP R2, 0
-		JLT OVERFLOW_MESSAGE
+		CMP R1, 0			; Check if the first multiplication overflowed
+		JLT OVERFLOW_MESSAGE		; If it's a number below zero, then it overflowed. Display
+		CMP R2, 0			; Check if the second multiplication overflowed
+		JLT OVERFLOW_MESSAGE		; 
 
 		MOV R3, R2			; R3 holds copy of R2 which will be used for rounding
 		MOV R9, 5			; Rounding threshold 
 		CALL ROUND_UNIT			; Round up if needed
 		ADD R1, R2			; Sum R1 and R2
 		JV OVERFLOW_MESSAGE		; If overflow is detected, display a warning
-		MOV R8, 5004H			; R8 now holds the adress where the price will be stored
+		MOV R8, TEMP_MEMORY		; R8 now holds the address where the purchase should be stored
+		ADD R8, 4			; R8 now holds the address where the price will be sotred
 		MOV [R8], R1			; Stores the price
-		RET
+		RET				; Returns
 OVERFLOW_MESSAGE:
 		MOV R2, OVERFLOW_ERROR 		; Load overflow warning message
 		CALL SHOW_DISPLAY		; Show it on the display
@@ -891,15 +896,15 @@ OVERFLOW:
 		MOVB R1, [R0]			; Read OK
 		CMP R1, 1			; Check if OK is on
 		JNE OVERFLOW			; If it's not on, check again
-		CALL CLEAR_PERIPHERICS
-RESTORE_PRODUCT_CODE:			; If it's on, prepare to take the user back
-		MOV R8, 5000H			; Place in memory where the PRODUCT_CODE was temporarily stored
+		CALL CLEAR_PERIPHERICS		; Clear the peripherics
+RESTORE_PRODUCT_CODE:				; If it's on, prepare to take the user back
+		MOV R8, TEMP_MEMORY		; Place in memory where the PRODUCT_CODE was temporarily stored
 		MOV R0, PRODUCT_CODE		; PRODUCT_CODE peripheric
 		MOV R1, [R8]			; Read the product code of the last item weighted
 		MOV [R0], R1			; Write it down on the PRODUCT_CODE peripheric so it loads back the correct display
 		JMP WEIGHT_SCALE_MAIN		; Go back to the weighing scale menu (option 1)
 STORE_PRODUCT_CODE:
-		MOV R8, 5000H			; Where will be stored the purchased product's PRODUCT_CODE
+		MOV R8, TEMP_MEMORY			; Where will be stored the purchased product's PRODUCT_CODE
 		MOV R9, [R0]			; Temporarly hold the PRODUCT_CODE
 		MOV [R8], R9			; Store the PRODUCT_CODE
 		RET
@@ -907,11 +912,11 @@ STORE_PRODUCT_CODE:
 ; =======================================
 ; === Save and delete stored purchases===
 ; =======================================
-SAVE_ON_MEMORY:
+SAVE_ON_MEMORY:					; Utilizar uma posição de memória para guardar o valor do pointer (onde inserir o registo)
 		CALL PURCHASED_CONFIRMED
-		MOV R0, 4FF0H			; R0 has the adress of the number of all purchases made
+		MOV R0, PURCHASES_SAVED		; R0 has the adress of the number of all purchases made;
 		MOV R1, [R0]			; R1 now has the number of times a purchase has been made
-		MOV R0, 5000H			; R0 has the adress of the PRODUCT_CODE of the product from the last purchase
+		MOV R0, TEMP_MEMORY		; R0 has the adress of the PRODUCT_CODE of the product from the last purchase
 		MOV R2, 6H			; 6, the number of adresses reserved for each purchase, each purchase holds the adress of the PRODUCT_CODE of the product (2 bytes), the weight of the product (2 bytes) and the price of the purchase (2 bytes)
 		MOV R3, 2H			; 2
 		MOV R4, 1H			; 1
@@ -958,24 +963,24 @@ SAVING_ON_MEMORY:
 		JMP CHECK_IF_TO_SAVE_ON_MEMORY 	; Checks to see if there are any more iterations left
 
 PURCHASED_CONFIRMED:
-		MOV R0, 4FF0H			; R0 has the adress where the number of confirmed orders is being stored
+		MOV R0, PURCHASES_SAVED		; R0 has the adress where the number of confirmed orders is being stored
 		MOV R1, [R0]			; R1 has a copy of the ammount of times a purchase has been confirmed
 		ADD R1, 1			; +1 purchase
 		MOV [R0], R1			; Store the updated ammount of confirmed purchases in the memory
 		RET
 
 CLEAR_HISTORY:
-		MOV R0, 4FF0H			; R0 holds the adress where the number of purchases has been made
+		MOV R0, PURCHASES_SAVED		; R0 holds the adress where the number of purchases has been made
 		MOV R1, [R0]			; R1 holds the ammount of times a purchase has been made
 		MOV R2, 0H			; 0
 		MOV [R0], R2			; Now the number of purchases made is 0
 
 		MOV R3, R1			; R3 holds the ammount of times a purchase has been made previously from being set to 0
-		MOV R0, 5000H			; R0 has a copy of the adress where the stored information from purchases is stored
+		MOV R0, TEMP_MEMORY		; R0 has a copy of the adress where the stored information from purchases is stored
 		MOV R4, 6H			; 6
 		MOV R5, 2H			; 2
 		CALL ADRESS_FIRST_PRICE		; Now R0 holds the adress of the price of the first ever purchase
-		MOV R6, 5000H			; R6 has a copy of the adress where the stored information from purchases is stored
+		MOV R6, TEMP_MEMORY		; R6 has a copy of the adress where the stored information from purchases is stored
 		MOV R7, 0H			; 0
 		CALL SET_IT_TO_ZERO		; Will make every single adress from 5000H till the last adress that was filled to 0
 		RET
