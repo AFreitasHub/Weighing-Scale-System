@@ -20,6 +20,7 @@ HISTORY_RESET		EQU	03H	; Option to reset weighting history
 MAX_WEIGHT		EQU	12CH	; Max weight (30kg) expressed in grams
 MIN_PRODUCT_CODE	EQU	64H	; 100
 MAX_PRODUCT_CODE	EQU	7CH	; 124
+ENTRY_SIZE		EQU 	14H 	; 20
 STRING_SIZE		EQU	10H	; 16
 STACK_POINTER 		EQU 	1000H	; Top of the stack address
 PURCHASES_SAVED		EQU	4FF0H	; Number of purchases saved in memory address
@@ -338,14 +339,14 @@ CHANGE_MENU:
 		JMP WEIGHT_SCALE		; Loop back once a product has been chosen
 
 CHECK_TO_SAVE:
-		MOV R0, OK
-		MOVB R11, [R0]
-		CMP R11, 1
-		JEQ SAVE_IT
-		JMP WEIGHT_SCALE_CYCLE
+		MOV R0, OK			; Prepare to read the OK peripheral
+		MOVB R11, [R0]			; Read the OK peripheral
+		CMP R11, 1			; Check if OK is on
+		JEQ SAVE_IT			; If so, save the current purchase in the memory
+		JMP WEIGHT_SCALE_CYCLE		; If not, loop back
 SAVE_IT:
-		CALL SAVE_ON_MEMORY
-		RET
+		CALL SAVE_ON_MEMORY		; Save the purchase on the memory
+		RET				; Return 
 
 ; ==================================================
 ; === Weighing History (Option 2) - SUB-ROUTINES ===
@@ -359,14 +360,14 @@ WEIGHT_HISTORY:
 		CMP R1, 0			; Check if there are any registers
 		JGT CYCLE_START			; If there are any registers, continue normally
 WARNING_EMPTY:
-		MOV R2, EMPTY_HISTORY
-		CALL SHOW_DISPLAY
-		CALL CONFIRM		
-		RET
+		MOV R2, EMPTY_HISTORY		; Load warning message
+		CALL SHOW_DISPLAY		; Display warning message
+		CALL CONFIRM			; Check if user pressed OK
+		RET				; If so, return
 CYCLE_START:
 		MOV R0, PERM_MEMORY_START	; First product code
 WEIGHT_HISTORY_CYCLE:
-		PUSH R1
+		PUSH R1				; Save the current value of remaining registers, on the stack, to prevent data loss
 		CALL FIND_ID			; Based on the product code in R0, find the name of the product
 		MOV R6, 227H			; Where the name must be written
 		MOV R5, 0			; Initialize character counter
@@ -376,38 +377,38 @@ WEIGHT_HISTORY_CYCLE:
 		MOV R6, 23AH			; Where the weight should be displayed
 		MOV R7, 0AH			; 10, used for conversion (10cg is 1kg) 
 		MOV R8, 01H			; 1, will be used to skip rounding (there's no need to round up in this case)
-		PUSH R0				;
+		PUSH R0				; Save R0 in the stack to prevent data loss
 		CALL CONVERT_WEIGHT		; Convert and display the weight
-		POP R0
+		POP R0				; Load the value back
 		ADD R0, 2			; Prepare to read the price
 		MOV R6, 24CH			; Where the price should be displayed
 		MOV R7, 64H			; 100, used for conversion (cent/hg to eur/kg)
 		MOV R8, 01H			; 1 to skip rounding
-		PUSH R0
+		PUSH R0				; Save R0 in the stack to prevent data loss
 		CALL CONVERT_TOTAL_PRICE	; Convert and display the price
-		POP R0
-		POP R1
+		POP R0				; Restore 
+		POP R1				; Load the counter from the stack to decrement it properly
 CHECK_CANCEL:	
-		MOV R2, CANCEL
-		MOVB R3, [R2]
-		CMP R3, 0
-		JNE CANCEL_HISTORY
+		MOV R2, CANCEL			; Prepare to read the CANCEL peripheral
+		MOVB R3, [R2]			; Read the CANCEL peripheral
+		CMP R3, 0			; Check if CANCEL has been pressed
+		JNE CANCEL_HISTORY		; If so, return
 CHECK_NEXT:
-		MOV R2, CHANGE 
-		MOVB R3, [R2]
-		CMP R3, 0
-		JEQ CHECK_CANCEL
-NEXT: 		
-		SUB R1, 1
-		CMP R1, 0
-		JEQ WRAP
-		CALL CLEAR_PERIPHERALS
-		ADD R0, 2
-		JMP WEIGHT_HISTORY_CYCLE
+		MOV R2, CHANGE 			; Prepare to read the CHANGE peripheral
+		MOVB R3, [R2]			; Read the CHANGE peripheral
+		CMP R3, 0			; Check if CHANGE has been pressed
+		JEQ CHECK_CANCEL		; If not, check for input again
+NEXT: 						; If so, go to the next register
+		SUB R1, 1			; Subtract one from the counter (how many items left to display)
+		CMP R1, 0			; Check if we've already reached the end of the weighing history
+		JEQ WRAP			; If so, wrap around
+		CALL CLEAR_PERIPHERALS		; If not, clear peripherals
+		ADD R0, 2			; Prepare to read the next product's code
+		JMP WEIGHT_HISTORY_CYCLE	; Loop back
 WRAP: 
-		JMP WEIGHT_HISTORY	
+		JMP WEIGHT_HISTORY		; Wrap around to the very start
 CANCEL_HISTORY:
-		RET
+		RET				; Return
 
 
 ; =========================================================
@@ -431,87 +432,88 @@ FILL_WEIGHT_SCALE:
 ; === Sub-routine to change product ===		
 ; =====================================		
 CHANGE_ITEM: 					
-		MOV R2, SELECT_FRUIT_MENU	
-		CALL SHOW_DISPLAY 		
-		CALL CLEAR_PERIPHERALS		
+		MOV R2, SELECT_FRUIT_MENU	; Load the fruit selection menu
+		CALL SHOW_DISPLAY 		; Display the menu
+		CALL CLEAR_PERIPHERALS		; Clear peripherals
 						
 ; ====================================		
 ; === Show and Choose the Products ===		
 ; ====================================		
 SHOW_PRODUCTS_START:				
 		MOV R11, PRODUCTS		; R11: Pointer to current PRODUCT_CODE
-		MOV R10, 4002H        		; R10: Pointer to current product NAME
-		MOV R8, 20            		; R8: Size of one product entry
+		MOV R10, R11        		
+		ADD R10, 2			; R10: Pointer to current product NAME
+		MOV R8, ENTRY_SIZE		; R8: Size of one product entry
 		MOV R7, 12            		; R7: Max characters in product name
 		MOV R0, 214H          		; R0: Initial display address
 		MOV R1, 0             		; Index counter
 FETCH_PRODUCTS:
-		PUSH R11             		; Save product pointer (ID)
-		CALL DISPLAY_PRODUCTS		; 
+		PUSH R11             		; Save current product code 
+		CALL DISPLAY_PRODUCTS		; Display the fetched products
 		ADD R11, R8          		; Next product's code
 		ADD R10, R8          		; Next product's name
-		ADD R1, 1			; 
-		CMP R1, 5			; 
-		JLT FETCH_PRODUCTS		; 
-		POP R6
-		POP R5
-		POP R4
-		POP R3
-		POP R2
+		ADD R1, 1			; Increment the counter 
+		CMP R1, 5			; Check if we've already displayed 5 items
+		JLT FETCH_PRODUCTS		; If not, keep going
+		POP R6				; Load the 5th product code
+		POP R5				; Load the 4th product code
+		POP R4				; Load the 3rd product code
+		POP R3				; Load the 2nd product code
+		POP R2				; Load the 1st product code
 		
 ; ===========================
 ; === Wait For User Input ===
 ; ===========================
 CHECK_INPUT:	
-		MOV R0, CANCEL
-		MOVB R1, [R0]
-		CMP R1, 0
-		JNE CANCEL_CHANGE
-		MOV R0, CHANGE
-		MOVB R1, [R0]
-		CMP R1, 0
-		JNE CHANGE_PRODUCTS
-		MOV R0, SEL_NR_MENU
-		MOVB R1, [R0]
-		CMP R1, 0
-		JEQ CHECK_INPUT
-		CALL CONFIRM
+		MOV R0, CANCEL			; Prepare to read the CANCEL peripheral
+		MOVB R1, [R0]			; Read the CANCEL peripheral
+		CMP R1, 0			; Check if it's off
+		JNE CANCEL_CHANGE		; If it's on, go to the previous menu
+		MOV R0, CHANGE			; Prepare to read the CHANGE peripheral
+		MOVB R1, [R0]			; Read the CHANGE peripheral
+		CMP R1, 0			; Check if it's off
+		JNE CHANGE_PRODUCTS		; If it's on, show the next 5 products
+		MOV R0, SEL_NR_MENU		; Prepare to read SEL_NR_MENU
+		MOVB R1, [R0]			; Read SEL_NR_MENU
+		CMP R1, 0			; Check if it's off
+		JEQ CHECK_INPUT			; If so, check for user input again
+		CALL CONFIRM			; If it's on, wait for confirmation
 ; ========================
 ; === Handle Selection ===
 ; ========================
 ITEM_SELECTION:
-		CMP R1, 1
-		JEQ SELECT_1
-		CMP R1, 2
-		JEQ SELECT_2
-		CMP R1, 3
-		JEQ SELECT_3
-		CMP R1, 4
-		JEQ SELECT_4
-		CMP R1, 5
+		CMP R1, 1			; See if SEL_NR_MENU = 1
+		JEQ SELECT_1			
+		CMP R1, 2			; See if SEL_NR_MENU = 2
+		JEQ SELECT_2			
+		CMP R1, 3			; See if SEL_NR_MENU = 3
+		JEQ SELECT_3			
+		CMP R1, 4			; See if SEL_NR_MENU = 4
+		JEQ SELECT_4			
+		CMP R1, 5			; See if SEL_NR_MENU = 5
 		JEQ SELECT_5
-		CALL SHOW_ERROR
-		JMP CHANGE_ITEM
+		CALL SHOW_ERROR			; If none of the valid options were selected, show an error
+		JMP CHANGE_ITEM			; Go back to the start after the error
 SELECT_1: 
-		MOV R1, R2
+		MOV R1, R2			; Load the 1st product code to R1
 		JMP END
 SELECT_2: 	
-		MOV R1, R3
+		MOV R1, R3			; Load the 2nd product code to R1
 		JMP END
 SELECT_3: 
-		MOV R1, R4
+		MOV R1, R4			; Load the 3rd product code to R1
 		JMP END
 SELECT_4: 
-		MOV R1, R5
+		MOV R1, R5			; Load the 4th product code to R1
 		JMP END
 SELECT_5: 
-		MOV R1, R6
+		MOV R1, R6			; Load the 5th product code to R1
 		JMP END
 CHANGE_PRODUCTS:
-		MOV R1, 0
-		MOV [R0], R1
-		MOV R0, 214H     
-		MOV R2, 41E0H
+		MOV R1, 0			 
+		MOV [R0], R1			
+		MOV R0, 214H     		
+		MOV R2, 41E0H			
 		CMP R11, R2
 		JGE WRAP_AROUND
 		JMP FETCH_PRODUCTS
@@ -530,16 +532,16 @@ CANCEL_CHANGE:
 ; ======================
 DISPLAY_PRODUCTS:
 		PUSH R10
-		MOV R9, 0             ; Character index
+		MOV R9, 0			; Character index
 DISP_LOOP:
-		MOVB R2, [R10]        ; Load character
-		MOVB [R0], R2         ; Write to display
+		MOVB R2, [R10]			; Load character
+		MOVB [R0], R2			; Write to display
 		ADD R10, 1
 		ADD R0, 1
 		ADD R9, 1
 		CMP R9, R7
 		JLT DISP_LOOP
-		ADD R0, 4             ; Next display position
+		ADD R0, 4			; Next display position
 		POP R10
 		RET
 
@@ -613,20 +615,17 @@ DISPLAY_WEIGHT:                  		; R6 -> Start of the display
 ; ===================
 
 FIND_SPECIFIC_PRICE:
-		MOV R0, TEMP_MEMORY		;
-        	MOV R11, PRODUCTS             	;
-		MOV R10, [R0]			;
-        	MOV R9, 20            		;
-        	MOV R8, 18            		;
-        	JMP FIND_PRICE_LOOP        	;
+		MOV R0, TEMP_MEMORY		; Prepare to read address where the product code is being stored temporarily
+        	JMP FIND_PRICE_PREPARE       	; Initialize values
 
 FIND_PRICE:
-		MOV R0, PRODUCT_CODE		;
-        	MOV R11, PRODUCTS		;
-		MOV R10, [R0]			;
-        	MOV R9, 20            		;
-        	MOV R8, 18            		;
-        	JMP FIND_PRICE_LOOP        	;
+		MOV R0, PRODUCT_CODE		; Prepare to read the PRODUCT_CODE peripheral
+FIND_PRICE_PREPARE:
+        	MOV R11, PRODUCTS		; Starting address of the products table
+		MOV R10, [R0]			; Read the product code in R0
+        	MOV R9, 20            		; Size of an entry (20 bytes)
+        	MOV R8, 18            		; How far the price is from the product code (18 bytes apart)
+        	JMP FIND_PRICE_LOOP        	; 
 FIND_PRICE_LOOP:
         	MOV R7, [R11]            	;
         	CMP R7, R10            		;
@@ -669,84 +668,84 @@ DISPLAY_TOTAL_PRICE:
 ; === Sub-Routine To Read User Input === 
 ; ======================================
 CONFIRM:	
-		MOV R0, OK			; 
-		MOVB R7, [R0]			; 
-		CMP R7, 0			; 
-		JEQ CONFIRM			; 
+		MOV R0, OK			; Prepare to read OK peripheral
+		MOVB R7, [R0]			; Read OK peripheral 
+		CMP R7, 0			; Check if the OK button hasn't been pressed
+		JEQ CONFIRM			; If it hasn't been pressed, keep checking
 		RET				; Return
 ; ====================================
 ; === Sub-Routine To Display Error ===
 ; ====================================
 SHOW_ERROR:
-		PUSH R0				;
-		PUSH R1				;
-		PUSH R2				;
-		MOV R2, ERROR_MENU		;
-		CALL SHOW_DISPLAY		;
-		CALL CLEAR_PERIPHERALS		;
-		MOV R0, OK			;
+		PUSH R0				; Save current registers in the stack to prevent data loss
+		PUSH R1				
+		PUSH R2				
+		MOV R2, ERROR_MENU		; Load the error message
+		CALL SHOW_DISPLAY		; Display the error message
+		CALL CLEAR_PERIPHERALS		; Clear all peripherals
+		MOV R0, OK			; Prepare to read OK
 ERROR:
-		MOVB R1, [R0]			;
-		CMP R1, 1			;
-		JNE ERROR			;
-		POP R2				;
-		POP R1				;
-		POP R0				;
-		RET				;
+		MOVB R1, [R0]			; Read OK
+		CMP R1, 1			; Check if OK was pressed
+		JNE ERROR			; If not, keep the error message and check again
+		POP R2				; If OK was pressed, restore register values and return
+		POP R1				
+		POP R0				
+		RET				
 
 ; ===================================
 ; === Sub-Routine To Show Display ===
 ; ===================================
 SHOW_DISPLAY:
-		PUSH R0				;
-		PUSH R1				;
-		PUSH R3				;
-		MOV R0, DISPLAY_START		;
-		MOV R1, DISPLAY_END		;
+		PUSH R0				; Save current registers in the stack to prevent data loss
+		PUSH R1				
+		PUSH R3				
+		MOV R0, DISPLAY_START		; Starting address of the display
+		MOV R1, DISPLAY_END		; Ending address of the display
 SHOW_DISPLAY_CYCLE:
-		MOV R3, [R2]			;
-		MOV [R0], R3			;
-		ADD R2, 2			;
-		ADD R0, 2			;
-		CMP R0, R1			;
-		JLE SHOW_DISPLAY_CYCLE		;
-		POP R3				;
-		POP R2				;
-		POP R1				;
-		RET				;
+		MOV R3, [R2]			; Load the first 2 bytes of the menu string into R3
+		MOV [R0], R3			; Write the first two characters on the display
+		ADD R2, 2			; Shift address in order to write the next 2 bytes
+		ADD R0, 2			; Shift the display position by 2
+		CMP R0, R1			; Check if we've already finished writing
+		JLE SHOW_DISPLAY_CYCLE		; If we haven't finished yet, keep writing
+		POP R3				; Restore original values
+		POP R2				
+		POP R1				
+		RET				; Return
 
 ; ========================================	
 ; === Sub-Routine To Clear Peripherics ===			
 ; ========================================			
 CLEAR_PERIPHERALS:
-		PUSH R0				;
-		PUSH R1				;
-		PUSH R2				;
-		PUSH R3				;
-		PUSH R4				;
-		PUSH R5				;
-		PUSH R6				;
-		MOV R1, SEL_NR_MENU		;
-		MOV R2, OK			;
-		MOV R3, CHANGE			;
-		MOV R4, CANCEL			;
-		MOV R5, PESO			;
-		MOV R6, PRODUCT_CODE		;
-		MOV R7, 0			;
-		MOVB [R1], R7			;
-		MOVB [R2], R7			;
-		MOVB [R3], R7			;
-		MOVB [R4], R7			;
-		MOV [R5], R7			;
-		MOV [R6], R7			;
-		POP R6				;
-		POP R5				;
-		POP R4				;
-		POP R3				;
-		POP R2				;
-		POP R1				;
-		POP R0				;
-		RET				;
+		PUSH R0				; Save current registers in the stack to prevent data loss
+		PUSH R1				
+		PUSH R2				
+		PUSH R3				
+		PUSH R4				
+		PUSH R5				
+		PUSH R6				
+		MOV R1, SEL_NR_MENU		; Prepare to clear the SEL_NR_MENU peripheral
+		MOV R2, OK			; Prepare to clear the OK peripheral 
+		MOV R3, CHANGE			; Prepare to clear the CHANGE peripheral
+		MOV R4, CANCEL			; Prepare to clear the CANCEL peripheral
+		MOV R5, PESO			; Prepare to clear the PESO peripheral
+		MOV R6, PRODUCT_CODE		; Prepare to clear the PRODUCT_CODE peripheral
+		MOV R7, 0			; Zero will be used to clear the peripherals
+		MOVB [R1], R7			; Set the SEL_NR_MENU to zero
+		MOVB [R2], R7			; Set the OK to zero
+		MOVB [R3], R7			; Set the CHANGE to zero
+		MOVB [R4], R7			; Set the CANCEL to zero
+		MOV [R5], R7			; Set the PESO to zero
+		MOV [R6], R7			; Set the PRODUCT_CODE to zero
+		POP R6				; Restore the original values from the stack 
+		POP R5				
+		POP R4				
+		POP R3				
+		POP R2				
+		POP R1				
+		POP R0				
+		RET				; Return
 
 ; ====================================
 ; === Sub-Routine To Clear Display ===
@@ -777,8 +776,8 @@ CONVERT_FOR_DISPLAY:
 		DIV R1, R7			; Divide by R7 and keep the whole part in R1 (29850 -> 29)
 		MOD R2, R7			; Divide by R7 and keep the decimal part in R2 (29850 -> 850)
 		MOV R3, R2			; Load a copy of R2. Will be user for rounding
-		CMP R8, 1
-		JNE ROUND_UNIT
+		CMP R8, 1			; If the R8 is 1, then the decimal part will not be divided at all. In this case, no rounding is needed
+		JNE ROUND_UNIT			; If R8 is not 1, check if rounding is needed
 		RET
 ROUND_UNIT:
 		DIV R2, R8			; Divide the decimal part by R8 to shift the decimal place (850 -> 8) 
@@ -787,10 +786,10 @@ ROUND_UNIT:
 		JGE ROUND_UP			; If lower than R9, do nothing. If greater, continue and round up
 		RET
 ROUND_UP:					; R1 -> Whole Part | R2 -> Decimal part
-		MOV R5, 9
+		MOV R5, 9			; 0.9 requires special attention when rounding up, so we'll check for it
 		CMP R2, R5			; Check if the decimal is 9
-		JEQ ROUND_UP_9			
-		ADD R2, 1			; If it's not 9, simply add 1
+		JEQ ROUND_UP_9			; If so, do the "special" round up
+		ADD R2, 1			; If it's not 9, simply add 1 to the decimal part (29,75 -> 29,85)
 		RET
 ROUND_UP_9:
 		ADD R1, 1			; If the decimal is 9, add 1 to the whole part
@@ -865,7 +864,7 @@ STORE_WEIGHT:
 		RET
 
 STORE_FINAL_PRICE:
-		CALL FIND_SPECIFIC_PRICE	; 
+		CALL FIND_SPECIFIC_PRICE	; Iterates through the products table to find the product's price
 						; R1 holds the weight
 		MOV R2, R1			; R2 has a copy of the weight
 		MOV R8, 10			; 10, to divide
@@ -877,7 +876,7 @@ STORE_FINAL_PRICE:
 		CMP R1, 0			; Check if the first multiplication overflowed
 		JLT OVERFLOW_MESSAGE		; If it's a number below zero, then it overflowed. Display
 		CMP R2, 0			; Check if the second multiplication overflowed
-		JLT OVERFLOW_MESSAGE		; 
+		JLT OVERFLOW_MESSAGE		; Display warning message
 
 		MOV R3, R2			; R3 holds copy of R2 which will be used for rounding
 		MOV R9, 5			; Rounding threshold 
@@ -905,7 +904,7 @@ RESTORE_PRODUCT_CODE:				; If it's on, prepare to take the user back
 		MOV [R0], R1			; Write it down on the PRODUCT_CODE peripheral so it loads back the correct display
 		JMP WEIGHT_SCALE_MAIN		; Go back to the weighing scale menu (option 1)
 STORE_PRODUCT_CODE:
-		MOV R8, TEMP_MEMORY			; Where will be stored the purchased product's PRODUCT_CODE
+		MOV R8, TEMP_MEMORY		; Where will be stored the purchased product's PRODUCT_CODE
 		MOV R9, [R0]			; Temporarly hold the PRODUCT_CODE
 		MOV [R8], R9			; Store the PRODUCT_CODE
 		RET
